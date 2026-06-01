@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>智享社区团购 - 后台管理登入</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/layui@2.9.8/dist/css/layui.css">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:'Microsoft YaHei',sans-serif;}
+  .login-box{width:420px;background:#fff;border-radius:16px;padding:40px 35px 30px;box-shadow:0 20px 60px rgba(0,0,0,.3);}
+  .login-box h2{text-align:center;color:#333;margin-bottom:8px;font-size:26px;font-weight:700;}
+  .login-box .sub{text-align:center;color:#999;margin-bottom:28px;font-size:14px;}
+  .login-box .layui-form-item{margin-bottom:20px;}
+  .login-box .layui-input{height:46px;border-radius:8px;font-size:15px;}
+  .login-box .captcha-row{display:flex;gap:10px;}
+  .login-box .captcha-row .layui-input{flex:1;}
+  .login-box .captcha-row button{width:120px;height:46px;border-radius:8px;background:#667eea;color:#fff;border:none;cursor:pointer;font-size:14px;white-space:nowrap;}
+  .login-box .captcha-row button:hover{background:#5a6fd6;}
+  .login-btn{width:100%;height:48px;border-radius:8px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;font-size:17px;font-weight:600;border:none;cursor:pointer;letter-spacing:2px;}
+  .login-btn:hover{opacity:.9;}
+  .reg-link{text-align:center;margin-top:18px;color:#999;font-size:13px;}
+  .reg-link a{color:#667eea;cursor:pointer;}
+  .err-msg{color:#ff5722;text-align:center;margin-bottom:12px;font-size:13px;display:none;}
+</style>
+</head>
+<body>
+<div class="login-box">
+  <h2>🍊 智享社区团购</h2>
+  <p class="sub">Web 后台管理系统</p>
+  <div class="err-msg" id="errMsg"></div>
+  <form class="layui-form">
+    <div class="layui-form-item">
+      <input type="text" name="username" lay-verify="required" placeholder="请输入用户名" autocomplete="off" class="layui-input" id="username">
+    </div>
+    <div class="layui-form-item">
+      <input type="password" name="password" lay-verify="required" placeholder="请输入密码" autocomplete="off" class="layui-input" id="password">
+    </div>
+    <div class="layui-form-item">
+      <div class="captcha-row">
+        <input type="text" name="captcha" placeholder="验证码" class="layui-input" id="captcha" maxlength="4">
+        <button type="button" id="getCaptchaBtn" onclick="getCaptcha()">获取验证码</button>
+      </div>
+    </div>
+    <button type="button" class="login-btn" onclick="doLogin()">登 入</button>
+  </form>
+  <div class="reg-link">
+    还没有帐号？<a onclick="showRegister()">立即注册</a>
+  </div>
+</div>
+
+<!-- 注册对话框 -->
+<div id="regDialog" style="display:none;padding:20px;">
+  <form class="layui-form">
+    <div class="layui-form-item">
+      <input type="text" name="regUser" placeholder="请输入用户名" class="layui-input" id="regUser">
+    </div>
+    <div class="layui-form-item">
+      <input type="password" name="regPass" placeholder="请输入密码" class="layui-input" id="regPass">
+    </div>
+    <div class="layui-form-item">
+      <input type="password" name="regPass2" placeholder="确认密码" class="layui-input" id="regPass2">
+    </div>
+    <button type="button" class="layui-btn layui-btn-normal" style="width:100%" onclick="doRegister()">注 册</button>
+  </form>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/layui@2.9.8/dist/layui.js"></script>
+<script>
+var BASE = '';
+
+function getCaptcha(){
+  var u = document.getElementById('username').value.trim();
+  if(!u){ document.getElementById('errMsg').style.display='block'; document.getElementById('errMsg').innerText='请先输入用户名'; return; }
+  document.getElementById('errMsg').style.display='none';
+  fetch(BASE+'/admin/captcha?username='+encodeURIComponent(u))
+    .then(r=>r.json())
+    .then(d=>{
+      if(d.code===0){
+        document.getElementById('getCaptchaBtn').innerText = d.data.captcha;
+        setTimeout(function(){ document.getElementById('getCaptchaBtn').innerText='获取验证码'; }, 30000);
+      }
+    });
+}
+
+function doLogin(){
+  var u=document.getElementById('username').value.trim();
+  var p=document.getElementById('password').value.trim();
+  var c=document.getElementById('captcha').value.trim();
+  if(!u||!p){ document.getElementById('errMsg').style.display='block'; document.getElementById('errMsg').innerText='请输入用户名和密码'; return; }
+  document.getElementById('errMsg').style.display='none';
+  fetch(BASE+'/admin/login',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({username:u,password:p,captcha:c})
+  }).then(r=>r.json()).then(d=>{
+    if(d.code===0){
+      localStorage.setItem('token',d.data.token);
+      localStorage.setItem('adminName',d.data.name);
+      localStorage.setItem('adminRole',d.data.role);
+      window.location.href='/admin';
+    }else{
+      document.getElementById('errMsg').style.display='block';
+      document.getElementById('errMsg').innerText=d.msg;
+    }
+  });
+}
+
+function showRegister(){
+  layui.use('layer',function(){
+    var layer=layui.layer;
+    layer.open({type:1,title:'管理员注册',area:'400px',content:document.getElementById('regDialog').innerHTML,
+      btn:['注册','取消'],
+      yes:function(idx){
+        doRegister(layer,idx);
+      }
+    });
+  });
+}
+
+function doRegister(layerObj,idx){
+  var u=document.getElementById('regUser')?document.getElementById('regUser').value.trim():'';
+  var p=document.getElementById('regPass')?document.getElementById('regPass').value.trim():'';
+  var p2=document.getElementById('regPass2')?document.getElementById('regPass2').value.trim():'';
+  if(!u||!p){alert('请填写完整');return;}
+  if(p!==p2){alert('两次密码不一致');return;}
+  fetch(BASE+'/admin/register',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({username:u,password:p})
+  }).then(r=>r.json()).then(d=>{
+    alert(d.msg);
+    if(d.code===0 && layerObj && idx) layerObj.close(idx);
+  });
+}
+
+document.addEventListener('keydown',function(e){if(e.key==='Enter')doLogin();});
+</script>
+</body>
+</html>

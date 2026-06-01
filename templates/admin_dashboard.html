@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>智享社区团购 - 后台管理</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/layui@2.9.8/dist/css/layui.css">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'Microsoft YaHei',sans-serif;background:#f5f5f5;}
+  .header{height:60px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 24px;position:fixed;top:0;left:0;right:0;z-index:1000;}
+  .header h2{font-size:20px;font-weight:600;}
+  .header .right{display:flex;align-items:center;gap:16px;font-size:14px;}
+  .header .right button{background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.4);padding:6px 16px;border-radius:6px;cursor:pointer;font-size:13px;}
+  .sidebar{width:200px;background:#fff;position:fixed;top:60px;left:0;bottom:0;overflow-y:auto;box-shadow:2px 0 8px rgba(0,0,0,.06);z-index:999;}
+  .sidebar .menu-item{display:block;padding:14px 20px;color:#555;font-size:14px;cursor:pointer;border-left:3px solid transparent;transition:all .2s;text-decoration:none;}
+  .sidebar .menu-item:hover{background:#f0f3ff;color:#667eea;}
+  .sidebar .menu-item.active{background:#f0f3ff;color:#667eea;border-left-color:#667eea;font-weight:600;}
+  .sidebar .menu-item i{margin-right:8px;}
+  .main-content{margin-left:200px;margin-top:60px;padding:24px;min-height:calc(100vh - 60px);}
+  .section{display:none;}
+  .section.active{display:block;}
+  .card{background:#fff;border-radius:10px;padding:20px;margin-bottom:20px;box-shadow:0 2px 8px rgba(0,0,0,.06);}
+  .card h4{margin-bottom:16px;color:#333;font-size:16px;}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:20px;}
+  .stat-card{background:#fff;border-radius:10px;padding:20px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.06);}
+  .stat-card .num{font-size:32px;font-weight:700;color:#667eea;}
+  .stat-card .label{color:#999;font-size:13px;margin-top:6px;}
+  .toolbar{display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;align-items:center;}
+  .toolbar input,.toolbar select{height:38px;border:1px solid #ddd;border-radius:6px;padding:0 12px;font-size:14px;}
+  .toolbar button{padding:8px 20px;background:#667eea;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:14px;}
+  .toolbar button:hover{opacity:.9;}
+  .toolbar button.green{background:#5cb85c;}
+  .toolbar button.orange{background:#f0ad4e;}
+  .toolbar button.red{background:#d9534f;}
+  .status-tag{padding:3px 10px;border-radius:12px;font-size:12px;}
+  .status-0{background:#f0ad4e;color:#fff;}
+  .status-1{background:#5cb85c;color:#fff;}
+  .status-2{background:#5bc0de;color:#fff;}
+  .status-3{background:#667eea;color:#fff;}
+  .status-4{background:#999;color:#fff;}
+  .layui-table-cell .layui-btn-xs{margin:0 3px;}
+  .form-row{display:flex;gap:12px;margin-bottom:14px;flex-wrap:wrap;}
+  .form-row label{width:100px;text-align:right;line-height:38px;color:#666;font-size:14px;}
+  .form-row input,.form-row select,.form-row textarea{flex:1;min-width:200px;height:38px;border:1px solid #ddd;border-radius:6px;padding:0 12px;font-size:14px;}
+  .form-row textarea{height:80px;padding:10px 12px;}
+</style>
+</head>
+<body>
+
+<!-- 顶部 -->
+<div class="header">
+  <h2>🍊 智享社区团购后台</h2>
+  <div class="right">
+    <span id="headerUser"></span>
+    <span style="font-size:12px;color:rgba(255,255,255,.7)" id="headerRole"></span>
+    <button onclick="logout()">退出</button>
+  </div>
+</div>
+
+<!-- 侧边栏 -->
+<div class="sidebar">
+  <a class="menu-item active" data-page="dashboard"><i>📊</i> 仪表板</a>
+  <a class="menu-item" data-page="commodity"><i>🛒</i> 商品管理</a>
+  <a class="menu-item" data-page="order"><i>📋</i> 订单管理</a>
+  <a class="menu-item" data-page="user"><i>👥</i> 用户管理</a>
+  <a class="menu-item" data-page="store"><i>📍</i> 门店管理</a>
+  <a class="menu-item" data-page="role"><i>🔐</i> 角色管理</a>
+  <a class="menu-item" data-page="ads"><i>🖼️</i> 广告管理</a>
+  <a class="menu-item" data-page="announcement"><i>📢</i> 公告管理</a>
+</div>
+
+<!-- 主内容区 -->
+<div class="main-content">
+
+  <!-- ═══ 仪表板 ═══ -->
+  <div class="section active" id="sec-dashboard">
+    <div class="stats">
+      <div class="stat-card"><div class="num" id="stat-users">0</div><div class="label">前台用户</div></div>
+      <div class="stat-card"><div class="num" id="stat-orders">0</div><div class="label">总订单</div></div>
+      <div class="stat-card"><div class="num" id="stat-items">0</div><div class="label">商品数</div></div>
+      <div class="stat-card"><div class="num" id="stat-sales">¥0</div><div class="label">今日销售额</div></div>
+    </div>
+    <div class="card"><h4>团长销量排行</h4><div id="leaderTable"></div></div>
+  </div>
+
+  <!-- ═══ 商品管理 ═══ -->
+  <div class="section" id="sec-commodity">
+    <div class="card">
+      <h4>商品列表</h4>
+      <div class="toolbar">
+        <select id="comCatFilter"><option value="">全部分类</option></select>
+        <input type="text" id="comKeyword" placeholder="搜索商品名称">
+        <button onclick="loadCommodities()">🔍 搜索</button>
+        <button class="green" onclick="showComForm()">＋ 发布商品</button>
+      </div>
+      <table class="layui-table" lay-skin="line">
+        <thead><tr><th>ID</th><th>图片</th><th>名称</th><th>分类</th><th>价格</th><th>团购价</th><th>库存</th><th>销量</th><th>状态</th><th>团购</th><th>操作</th></tr></thead>
+        <tbody id="comTbody"></tbody>
+      </table>
+      <div id="comPage"></div>
+    </div>
+  </div>
+
+  <!-- ═══ 订单管理 ═══ -->
+  <div class="section" id="sec-order">
+    <div class="card">
+      <h4>订单列表</h4>
+      <div class="toolbar">
+        <select id="ordStatus"><option value="">全部状态</option><option value="0">待付款</option><option value="1">已付款</option><option value="2">待取货</option><option value="3">已取货</option><option value="4">已取消</option></select>
+        <input type="text" id="ordKeyword" placeholder="订单编号/用户名">
+        <button onclick="loadOrders()">🔍 搜索</button>
+      </div>
+      <table class="layui-table" lay-skin="line">
+        <thead><tr><th>ID</th><th>订单编号</th><th>用户</th><th>金额</th><th>状态</th><th>自提门店</th><th>取货码</th><th>时间</th><th>操作</th></tr></thead>
+        <tbody id="ordTbody"></tbody>
+      </table>
+      <div id="ordPage"></div>
+    </div>
+  </div>
+
+  <!-- ═══ 用户管理 ═══ -->
+  <div class="section" id="sec-user">
+    <div class="card">
+      <h4>前台用户列表</h4>
+      <div class="toolbar">
+        <input type="text" id="userKeyword" placeholder="搜索暱称/电话">
+        <button onclick="loadUsers()">🔍 搜索</button>
+      </div>
+      <table class="layui-table" lay-skin="line">
+        <thead><tr><th>ID</th><th>暱称</th><th>电话</th><th>OpenID</th><th>状态</th><th>注册时间</th><th>操作</th></tr></thead>
+        <tbody id="userTbody"></tbody>
+      </table>
+      <div id="userPage"></div>
+    </div>
+  </div>
+
+  <!-- ═══ 门店管理 ═══ -->
+  <div class="section" id="sec-store">
+    <div class="card">
+      <h4>自提门店</h4>
+      <button class="green" style="margin-bottom:12px" onclick="showStoreForm()">＋ 新增门店</button>
+      <table class="layui-table" lay-skin="line">
+        <thead><tr><th>ID</th><th>门店名称</th><th>地址</th><th>电话</th><th>团长ID</th><th>状态</th><th>操作</th></tr></thead>
+        <tbody id="storeTbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ═══ 角色管理 ═══ -->
+  <div class="section" id="sec-role">
+    <div class="card">
+      <h4>角色列表</h4>
+      <button class="green" style="margin-bottom:12px" onclick="showRoleForm()">＋ 新增角色</button>
+      <table class="layui-table" lay-skin="line">
+        <thead><tr><th>ID</th><th>角色名</th><th>描述</th><th>权限菜单</th><th>操作</th></tr></thead>
+        <tbody id="roleTbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ═══ 广告管理 ═══ -->
+  <div class="section" id="sec-ads">
+    <div class="card">
+      <h4>轮播广告</h4>
+      <button class="green" style="margin-bottom:12px" onclick="showAdsForm()">＋ 新增广告</button>
+      <table class="layui-table" lay-skin="line">
+        <thead><tr><th>ID</th><th>标题</th><th>图片URL</th><th>链接</th><th>排序</th><th>状态</th><th>操作</th></tr></thead>
+        <tbody id="adsTbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ═══ 公告管理 ═══ -->
+  <div class="section" id="sec-announcement">
+    <div class="card">
+      <h4>公告列表</h4>
+      <button class="green" style="margin-bottom:12px" onclick="showAnnForm()">＋ 发布公告</button>
+      <table class="layui-table" lay-skin="line">
+        <thead><tr><th>ID</th><th>标题</th><th>内容</th><th>状态</th><th>时间</th><th>操作</th></tr></thead>
+        <tbody id="annTbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/layui@2.9.8/dist/layui.js"></script>
+<script>
+var TOKEN=localStorage.getItem('token')||'';
+var BASE='';
+var LAYER; layui.use('layer',function(m){LAYER=m.layer;});
+
+// 登入检查
+if(!TOKEN){window.location.href='/admin/login';}
+document.getElementById('headerUser').innerText=localStorage.getItem('adminName')||'';
+document.getElementById('headerRole').innerText=localStorage.getItem('adminRole')||'';
+
+function ajax(url,method,data){
+  return fetch(BASE+url,{method:method||'GET',headers:{'Content-Type':'application/json','Authorization':'Bearer '+TOKEN},body:data?JSON.stringify(data):undefined})
+    .then(function(r){return r.json();});
+}
+
+// ─── 侧边栏切换 ───
+document.querySelectorAll('.menu-item').forEach(function(el){
+  el.addEventListener('click',function(e){
+    e.preventDefault();
+    document.querySelectorAll('.menu-item').forEach(function(m){m.classList.remove('active');});
+    this.classList.add('active');
+    var p=this.getAttribute('data-page');
+    document.querySelectorAll('.section').forEach(function(s){s.classList.remove('active');});
+    var sec=document.getElementById('sec-'+p);
+    if(sec) sec.classList.add('active');
+    // 载入对应的资料
+    if(p==='dashboard') loadDashboard();
+    if(p==='commodity'){ loadCategories(); loadCommodities(); }
+    if(p==='order') loadOrders();
+    if(p==='user') loadUsers();
+    if(p==='store') loadStores();
+    if(p==='role') loadRoles();
+    if(p==='ads') loadAds();
+    if(p==='announcement') loadAnnouncements();
+  });
+});
+
+function logout(){ localStorage.clear(); window.location.href='/admin/login'; }
+
+function statusTag(s){
+  var map={0:'<span class="status-tag status-0">待付款</span>',1:'<span class="status-tag status-1">已付款</span>',2:'<span class="status-tag status-2">待取货</span>',3:'<span class="status-tag status-3">已取货</span>',4:'<span class="status-tag status-4">已取消</span>'};
+  return map[s]||'<span class="status-tag">未知</span>';
+}
+
+// ═══ 仪表板 ═══
+function loadDashboard(){
+  ajax('/admin/dashboard').then(function(d){
+    if(d.code===0){
+      document.getElementById('stat-users').innerText=d.data.user_count;
+      document.getElementById('stat-orders').innerText=d.data.order_count;
+      document.getElementById('stat-items').innerText=d.data.commodity_count;
+      document.getElementById('stat-sales').innerText='¥'+d.data.today_sales.toFixed(2);
+    }
+  });
+  ajax('/admin/leader-sales').then(function(d){
+    if(d.code===0&&d.data){
+      var h='<table class="layui-table" lay-skin="line"><thead><tr><th>门店ID</th><th>门店名称</th><th>订单数</th><th>销售额</th></tr></thead><tbody>';
+      d.data.forEach(function(r){h+='<tr><td>'+r.store_id+'</td><td>'+r.store_name+'</td><td>'+r.order_count+'</td><td>¥'+parseFloat(r.total_sales).toFixed(2)+'</td></tr>';});
+      h+='</tbody></table>';
+      document.getElementById('leaderTable').innerHTML=h;
+    }
+  });
+}
+
+// ═══ 商品管理 ═══
+var comPage=1;
+function loadCategories(){
+  ajax('/admin/categories').then(function(d){
+    if(d.code===0){
+      var h='<option value="">全部分类</option>';
+      d.data.forEach(function(c){h+='<option value="'+c.id+'">'+c.name+'</option>';});
+      document.getElementById('comCatFilter').innerHTML=h;
+    }
+  });
+}
+function loadCommodities(p){
+  comPage=p||comPage;
+  var kw=document.getElementById('comKeyword').value;
+  var cid=document.getElementById('comCatFilter').value;
+  ajax('/admin/commodities?page='+comPage+'&limit=10&keyword='+encodeURIComponent(kw)+'&category_id='+cid).then(function(d){
+    if(d.code===0){
+      var h='';
+      d.data.forEach(function(c){
+        h+='<tr>';
+        h+='<td>'+c.id+'</td>';
+        h+='<td><img src="'+c.image+'" style="width:50px;height:50px;border-radius:6px;object-fit:cover" onerror="this.src=\'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 50 50%22><rect fill=%22%23eee%22 width=%2250%22 height=%2250%22/><text x=%2225%22 y=%2230%22 text-anchor=%22middle%22 fill=%22%23999%22 font-size=%2212%22>无图</text></svg>\'"></td>';
+        h+='<td>'+c.name+'</td>';
+        h+='<td>'+c.category_name+'</td>';
+        h+='<td>¥'+c.price+'</td>';
+        h+='<td>¥'+c.group_price+'</td>';
+        h+='<td>'+c.stock+'</td>';
+        h+='<td>'+c.sales+'</td>';
+        h+='<td>'+(c.status==1?'<span class="status-tag status-1">上架</span>':'<span class="status-tag status-0">下架</span>')+'</td>';
+        h+='<td>'+(c.is_groupon==1?'<span class="status-tag status-2">团购</span>':'普通')+'</td>';
+        h+='<td>';
+        h+='<button class="layui-btn layui-btn-xs" onclick="editCommodity('+c.id+')">修改</button> ';
+        h+='<button class="layui-btn layui-btn-xs layui-btn-normal" onclick="toggleCommodity('+c.id+')">'+(c.status==1?'下架':'上架')+'</button> ';
+        h+='<button class="layui-btn layui-btn-xs layui-btn-danger" onclick="deleteCommodity('+c.id+')">删除</button>';
+        h+='</td></tr>';
+      });
+      document.getElementById('comTbody').innerHTML=h;
+      document.getElementById('comPage').innerHTML='<button onclick="loadCommodities('+(comPage-1)+')" '+(comPage<=1?'disabled':'')+'>上一页</button> 第'+comPage+'页 / 共'+Math.ceil(d.count/10)+'页 <button onclick="loadCommodities('+(comPage+1)+')" '+(comPage>=Math.ceil(d.count/10)?'disabled':'')+'>下一页</button>';
+    }
+  });
+}
+
+function showComForm(id){
+  var isEdit=!!id;
+  var title=isEdit?'修改商品':'发布商品';
+  var html='<div style="padding:20px"><form class="layui-form">';
+  html+='<div class="form-row"><label>商品名称</label><input type="text" id="fComName" class="layui-input"></div>';
+  html+='<div class="form-row"><label>分类</label><select id="fComCat"></select></div>';
+  html+='<div class="form-row"><label>价格</label><input type="number" id="fComPrice" step="0.01" class="layui-input"></div>';
+  html+='<div class="form-row"><label>团购价</label><input type="number" id="fComGPrice" step="0.01" class="layui-input"></div>';
+  html+='<div class="form-row"><label>库存</label><input type="number" id="fComStock" class="layui-input"></div>';
+  html+='<div class="form-row"><label>图片URL</label><input type="text" id="fComImg" class="layui-input"></div>';
+  html+='<div class="form-row"><label>描述</label><textarea id="fComDesc" class="layui-textarea"></textarea></div>';
+  html+='<div class="form-row"><label>预售时间</label><input type="datetime-local" id="fComSaleTime" class="layui-input"></div>';
+  html+='<div class="form-row"><label>开团时间</label><input type="datetime-local" id="fComGroupTime" class="layui-input"></div>';
+  html+='<div class="form-row"><label>是否团购</label><select id="fComIsGroup"><option value="0">普通</option><option value="1">团购</option></select></div>';
+  html+='</form></div>';
+  LAYER.open({type:1,title:title,area:'600px',content:html,btn:['保存','取消'],
+    yes:function(idx){
+      var data={
+        name:document.getElementById('fComName').value,
+        category_id:parseInt(document.getElementById('fComCat').value)||0,
+        price:parseFloat(document.getElementById('fComPrice').value)||0,
+        group_price:parseFloat(document.getElementById('fComGPrice').value)||0,
+        stock:parseInt(document.getElementById('fComStock').value)||0,
+        image:document.getElementById('fComImg').value,
+        description:document.getElementById('fComDesc').value,
+        sale_start_time:document.getElementById('fComSaleTime').value?document.getElementById('fComSaleTime').value+':00':null,
+        group_start_time:document.getElementById('fComGroupTime').value?document.getElementById('fComGroupTime').value+':00':null,
+        is_groupon:parseInt(document.getElementById('fComIsGroup').value)||0
+      };
+      var url=isEdit?'/admin/commodities/'+id:'/admin/commodities';
+      var method=isEdit?'PUT':'POST';
+      ajax(url,method,data).then(function(d){LAYER.msg(d.msg);if(d.code===0){LAYER.close(idx);loadCommodities();}});
+    }
+  });
+  // 填入分类
+  ajax('/admin/categories').then(function(d){
+    if(d.code===0){
+      var h=''; d.data.forEach(function(c){h+='<option value="'+c.id+'">'+c.name+'</option>';});
+      document.getElementById('fComCat').innerHTML=h;
+    }
+  });
+  // 如果是编辑，填入现有资料
+  if(isEdit){
+    ajax('/admin/commodities?page=1&limit=100').then(function(d){
+      if(d.code===0){
+        var c=d.data.find(function(x){return x.id==id;});
+        if(c){
+          document.getElementById('fComName').value=c.name||'';
+          document.getElementById('fComCat').value=c.category_id||'';
+          document.getElementById('fComPrice').value=c.price||0;
+          document.getElementById('fComGPrice').value=c.group_price||0;
+          document.getElementById('fComStock').value=c.stock||0;
+          document.getElementById('fComImg').value=c.image||'';
+          document.getElementById('fComDesc').value=c.description||'';
+          document.getElementById('fComIsGroup').value=c.is_groupon||0;
+        }
+      }
+    });
+  }
+}
+
+function editCommodity(id){showComForm(id);}
+function toggleCommodity(id){ajax('/admin/commodities/'+id+'/toggle','PUT').then(function(d){LAYER.msg(d.msg);loadCommodities();});}
+function deleteCommodity(id){LAYER.confirm('确认删除？',function(idx){ajax('/admin/commodities/'+id,'DELETE').then(function(d){LAYER.msg(d.msg);LAYER.close(idx);loadCommodities();});});}
+
+// ═══ 订单管理 ═══
+var ordPage=1;
+function loadOrders(p){
+  ordPage=p||ordPage;
+  var kw=document.getElementById('ordKeyword').value;
+  var st=document.getElementById('ordStatus').value;
+  ajax('/admin/orders?page='+ordPage+'&limit=10&keyword='+encodeURIComponent(kw)+'&status='+st).then(function(d){
+    if(d.code===0){
+      var h='';
+      d.data.forEach(function(o){
+        h+='<tr>';
+        h+='<td>'+o.id+'</td><td>'+o.order_no+'</td><td>'+o.user_name+'</td><td>¥'+o.total_amount+'</td>';
+        h+='<td>'+statusTag(o.status)+'</td><td>'+o.store_name+'</td><td>'+o.pickup_code+'</td>';
+        h+='<td>'+o.created_at+'</td>';
+        h+='<td>';
+        h+='<button class="layui-btn layui-btn-xs" onclick="viewOrder('+o.id+')">详情</button> ';
+        if(o.status==1) h+='<button class="layui-btn layui-btn-xs layui-btn-normal" onclick="setPickup('+o.id+')">设为待取货</button>';
+        h+='</td></tr>';
+      });
+      document.getElementById('ordTbody').innerHTML=h;
+      document.getElementById('ordPage').innerHTML='<button onclick="loadOrders('+(ordPage-1)+')" '+(ordPage<=1?'disabled':'')+'>上一页</button> 第'+ordPage+'页 / 共'+Math.ceil(d.count/10)+'页 <button onclick="loadOrders('+(ordPage+1)+')" '+(ordPage>=Math.ceil(d.count/10)?'disabled':'')+'>下一页</button>';
+    }
+  });
+}
+
+function viewOrder(id){
+  ajax('/admin/orders/'+id).then(function(d){
+    if(d.code===0){
+      var o=d.data.order, items=d.data.items;
+      var h='<div style="padding:16px"><p><b>订单编号:</b> '+o.order_no+'</p><p><b>用户:</b> '+o.user_name+'</p><p><b>金额:</b> ¥'+o.total_amount+'</p><p><b>状态:</b> '+statusTag(o.status)+'</p><p><b>取货码:</b> '+o.pickup_code+'</p><hr><h5>订单项:</h5>';
+      items.forEach(function(i){h+='<p>'+i.commodity_name+' x'+i.quantity+' ¥'+i.price+'</p>';});
+      h+='</div>';
+      LAYER.open({type:1,title:'订单详情',area:'500px',content:h});
+    }
+  });
+}
+
+function setPickup(id){
+  // 载入门店列表让管理员选择
+  ajax('/admin/stores?page=1&limit=100').then(function(d){
+    if(d.code===0){
+      var h='<div style="padding:20px"><p>选择自提门店：</p><select id="pickStore" style="width:100%;height:40px">';
+      d.data.forEach(function(s){h+='<option value="'+s.id+'">'+s.name+'</option>';});
+      h+='</select></div>';
+      LAYER.open({type:1,title:'设为待取货',area:'400px',content:h,btn:['确定','取消'],
+        yes:function(idx){
+          var sid=parseInt(document.getElementById('pickStore').value)||0;
+          ajax('/admin/orders/'+id+'/status','PUT',{status:2,store_id:sid}).then(function(d2){
+            LAYER.msg(d2.msg);LAYER.close(idx);loadOrders();
+          });
+        }
+      });
+    }
+  });
+}
+
+// ═══ 用户管理 ═══
+var userPage=1;
+function loadUsers(p){
+  userPage=p||userPage;
+  var kw=document.getElementById('userKeyword').value;
+  ajax('/admin/users?page='+userPage+'&limit=10&keyword='+encodeURIComponent(kw)).then(function(d){
+    if(d.code===0){
+      var h='';
+      d.data.forEach(function(u){
+        h+='<tr><td>'+u.id+'</td><td>'+u.nickname+'</td><td>'+u.phone+'</td><td>'+u.openid+'</td>';
+        h+='<td>'+(u.status==1?'<span class="status-tag status-1">正常</span>':'<span class="status-tag status-0">禁用</span>')+'</td>';
+        h+='<td>'+u.created_at+'</td>';
+        h+='<td><button class="layui-btn layui-btn-xs layui-btn-normal" onclick="toggleUser('+u.id+')">'+(u.status==1?'禁用':'启用')+'</button> ';
+        h+='<button class="layui-btn layui-btn-xs layui-btn-danger" onclick="deleteUser('+u.id+')">删除</button></td></tr>';
+      });
+      document.getElementById('userTbody').innerHTML=h;
+      document.getElementById('userPage').innerHTML='<button onclick="loadUsers('+(userPage-1)+')" '+(userPage<=1?'disabled':'')+'>上一页</button> 第'+userPage+'页 / 共'+Math.ceil(d.count/10)+'页 <button onclick="loadUsers('+(userPage+1)+')" '+(userPage>=Math.ceil(d.count/10)?'disabled':'')+'>下一页</button>';
+    }
+  });
+}
+function toggleUser(id){ajax('/admin/users/'+id+'/toggle','PUT').then(function(d){LAYER.msg(d.msg);loadUsers();});}
+function deleteUser(id){LAYER.confirm('确认删除该用户？',function(idx){ajax('/admin/users/'+id,'DELETE').then(function(d){LAYER.msg(d.msg);LAYER.close(idx);loadUsers();});});}
+
+// ═══ 门店管理 ═══
+function loadStores(){
+  ajax('/admin/stores?page=1&limit=100').then(function(d){
+    if(d.code===0){
+      var h='';
+      d.data.forEach(function(s){
+        h+='<tr><td>'+s.id+'</td><td>'+s.name+'</td><td>'+s.address+'</td><td>'+s.phone+'</td><td>'+s.leader_id+'</td>';
+        h+='<td>'+(s.status==1?'<span class="status-tag status-1">营业</span>':'<span class="status-tag status-0">休息</span>')+'</td>';
+        h+='<td><button class="layui-btn layui-btn-xs" onclick="editStore('+s.id+')">修改</button> <button class="layui-btn layui-btn-xs layui-btn-danger" onclick="deleteStore('+s.id+')">删除</button></td></tr>';
+      });
+      document.getElementById('storeTbody').innerHTML=h;
+    }
+  });
+}
+function showStoreForm(id){
+  var isEdit=!!id;
+  var h='<div style="padding:20px"><div class="form-row"><label>名称</label><input id="fSName" class="layui-input"></div><div class="form-row"><label>地址</label><input id="fSAddr" class="layui-input"></div><div class="form-row"><label>电话</label><input id="fSPhone" class="layui-input"></div><div class="form-row"><label>团长ID</label><input type="number" id="fSLeader" class="layui-input"></div></div>';
+  LAYER.open({type:1,title:isEdit?'修改门店':'新增门店',area:'500px',content:h,btn:['保存','取消'],
+    yes:function(idx){
+      var data={name:document.getElementById('fSName').value,address:document.getElementById('fSAddr').value,phone:document.getElementById('fSPhone').value,leader_id:parseInt(document.getElementById('fSLeader').value)||0,status:1};
+      var url=isEdit?'/admin/stores/'+id:'/admin/stores';
+      ajax(url,isEdit?'PUT':'POST',data).then(function(d){LAYER.msg(d.msg);if(d.code===0){LAYER.close(idx);loadStores();}});
+    }
+  });
+}
+function editStore(id){showStoreForm(id);}
+function deleteStore(id){LAYER.confirm('确认删除？',function(idx){ajax('/admin/stores/'+id,'DELETE').then(function(d){LAYER.msg(d.msg);LAYER.close(idx);loadStores();});});}
+
+// ═══ 角色管理 ═══
+function loadRoles(){
+  ajax('/admin/roles').then(function(d){
+    if(d.code===0){
+      var h='';
+      d.data.forEach(function(r){h+='<tr><td>'+r.id+'</td><td>'+r.name+'</td><td>'+r.desc+'</td><td>'+r.menus+'</td><td><button class="layui-btn layui-btn-xs" onclick="editRole('+r.id+')">修改</button> <button class="layui-btn layui-btn-xs layui-btn-danger" onclick="deleteRole('+r.id+')">删除</button></td></tr>';});
+      document.getElementById('roleTbody').innerHTML=h;
+    }
+  });
+}
+function showRoleForm(id){
+  var isEdit=!!id;
+  var h='<div style="padding:20px"><div class="form-row"><label>角色名</label><input id="fRName" class="layui-input"></div><div class="form-row"><label>描述</label><input id="fRDesc" class="layui-input"></div><div class="form-row"><label>菜单(逗号分隔ID)</label><input id="fRMenus" class="layui-input"></div></div>';
+  LAYER.open({type:1,title:isEdit?'修改角色':'新增角色',area:'500px',content:h,btn:['保存','取消'],
+    yes:function(idx){
+      var data={name:document.getElementById('fRName').value,desc:document.getElementById('fRDesc').value,menus:document.getElementById('fRMenus').value};
+      var url=isEdit?'/admin/roles/'+id:'/admin/roles';
+      ajax(url,isEdit?'PUT':'POST',data).then(function(d){LAYER.msg(d.msg);if(d.code===0){LAYER.close(idx);loadRoles();}});
+    }
+  });
+}
+function editRole(id){showRoleForm(id);}
+function deleteRole(id){LAYER.confirm('确认删除？',function(idx){ajax('/admin/roles/'+id,'DELETE').then(function(d){LAYER.msg(d.msg);LAYER.close(idx);loadRoles();});});}
+
+// ═══ 广告管理 ═══
+function loadAds(){
+  ajax('/admin/ads/all?page=1&limit=100').then(function(d){
+    if(d.code===0){
+      var h='';
+      d.data.forEach(function(a){h+='<tr><td>'+a.id+'</td><td>'+a.title+'</td><td>'+a.image+'</td><td>'+a.link+'</td><td>'+a.sort+'</td><td>'+(a.status==1?'<span class="status-tag status-1">显示</span>':'<span class="status-tag status-0">隐藏</span>')+'</td><td><button class="layui-btn layui-btn-xs" onclick="editAds('+a.id+')">修改</button> <button class="layui-btn layui-btn-xs layui-btn-danger" onclick="deleteAds('+a.id+')">删除</button></td></tr>';});
+      document.getElementById('adsTbody').innerHTML=h;
+    }
+  });
+}
+function showAdsForm(id){
+  var isEdit=!!id;
+  var h='<div style="padding:20px"><div class="form-row"><label>标题</label><input id="fATitle" class="layui-input"></div><div class="form-row"><label>图片URL</label><input id="fAImg" class="layui-input"></div><div class="form-row"><label>链接</label><input id="fALink" class="layui-input"></div><div class="form-row"><label>排序</label><input type="number" id="fASort" class="layui-input"></div></div>';
+  LAYER.open({type:1,title:isEdit?'修改广告':'新增广告',area:'500px',content:h,btn:['保存','取消'],
+    yes:function(idx){
+      var data={title:document.getElementById('fATitle').value,image:document.getElementById('fAImg').value,link:document.getElementById('fALink').value,sort:parseInt(document.getElementById('fASort').value)||0,status:1};
+      var url=isEdit?'/admin/ads/'+id:'/admin/ads';
+      ajax(url,isEdit?'PUT':'POST',data).then(function(d){LAYER.msg(d.msg);if(d.code===0){LAYER.close(idx);loadAds();}});
+    }
+  });
+}
+function editAds(id){showAdsForm(id);}
+function deleteAds(id){LAYER.confirm('确认删除？',function(idx){ajax('/admin/ads/'+id,'DELETE').then(function(d){LAYER.msg(d.msg);LAYER.close(idx);loadAds();});});}
+
+// ═══ 公告管理 ═══
+function loadAnnouncements(){
+  ajax('/admin/announcements/all?page=1&limit=100').then(function(d){
+    if(d.code===0){
+      var h='';
+      d.data.forEach(function(a){h+='<tr><td>'+a.id+'</td><td>'+a.title+'</td><td>'+a.content+'</td><td>'+(a.status==1?'<span class="status-tag status-1">发布</span>':'<span class="status-tag status-0">隐藏</span>')+'</td><td>'+a.created_at+'</td><td><button class="layui-btn layui-btn-xs" onclick="editAnn('+a.id+')">修改</button> <button class="layui-btn layui-btn-xs layui-btn-danger" onclick="deleteAnn('+a.id+')">删除</button></td></tr>';});
+      document.getElementById('annTbody').innerHTML=h;
+    }
+  });
+}
+function showAnnForm(id){
+  var isEdit=!!id;
+  var h='<div style="padding:20px"><div class="form-row"><label>标题</label><input id="fAnnTitle" class="layui-input"></div><div class="form-row"><label>内容</label><textarea id="fAnnContent" class="layui-textarea"></textarea></div></div>';
+  LAYER.open({type:1,title:isEdit?'修改公告':'发布公告',area:'500px',content:h,btn:['保存','取消'],
+    yes:function(idx){
+      var data={title:document.getElementById('fAnnTitle').value,content:document.getElementById('fAnnContent').value,status:1};
+      var url=isEdit?'/admin/announcements/'+id:'/admin/announcements';
+      ajax(url,isEdit?'PUT':'POST',data).then(function(d){LAYER.msg(d.msg);if(d.code===0){LAYER.close(idx);loadAnnouncements();}});
+    }
+  });
+}
+function editAnn(id){showAnnForm(id);}
+function deleteAnn(id){LAYER.confirm('确认删除？',function(idx){ajax('/admin/announcements/'+id,'DELETE').then(function(d){LAYER.msg(d.msg);LAYER.close(idx);loadAnnouncements();});});}
+
+// ─── 初始化 ───
+loadDashboard();
+loadCategories();
+</script>
+</body>
+</html>
