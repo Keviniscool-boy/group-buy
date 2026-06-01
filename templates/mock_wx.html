@@ -100,6 +100,11 @@
   .msg-item .time{font-size:11px;color:#bbb;margin-top:4px;}
   .msg-item.unread{background:#FFFBF8;}
   .msg-item.unread .title::before{content:'● ';color:var(--primary);}
+  .order-card{background:#fff;margin:10px 16px;border-radius:12px;padding:14px;box-shadow:0 2px 8px rgba(0,0,0,.04);}
+  .order-card .top{display:flex;justify-content:space-between;gap:10px;font-size:12px;color:#666;border-bottom:1px solid var(--border);padding-bottom:8px;margin-bottom:8px;}
+  .order-card .item{display:flex;justify-content:space-between;font-size:13px;color:#333;margin:6px 0;}
+  .order-card .foot{display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-size:13px;}
+  .order-card button{background:var(--primary);color:#fff;border:none;border-radius:18px;padding:8px 14px;font-size:12px;}
 
   /* Toast */
   .toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,.75);color:#fff;padding:10px 24px;border-radius:20px;font-size:14px;z-index:300;display:none;}
@@ -162,6 +167,12 @@
   </div>
 </div>
 
+<!-- 页面: 订单 -->
+<div id="page-order" style="display:none">
+  <div class="section-title">📦 我的订单</div>
+  <div id="orderList"></div>
+</div>
+
 <!-- 页面: 消息 -->
 <div id="page-msg" style="display:none">
   <div class="section-title">📬 消息中心</div>
@@ -192,6 +203,7 @@
 <div class="bottom-nav">
   <div class="nav-item active" data-page="home" onclick="switchPage('home')"><span class="icon">🏠</span>首页</div>
   <div class="nav-item" data-page="cart" onclick="switchPage('cart')"><span class="icon">🛒</span>购物车</div>
+  <div class="nav-item" data-page="order" onclick="switchPage('order')"><span class="icon">📦</span>订单</div>
   <div class="nav-item" data-page="msg" onclick="switchPage('msg')"><span class="icon">💬</span>消息</div>
   <div class="nav-item" data-page="me" onclick="switchPage('me')"><span class="icon">👤</span>我的</div>
 </div>
@@ -200,6 +212,13 @@
 var TOKEN='',USER_ID=0,USER_NAME='';
 var BASE='';
 var currentCat='';
+
+function html(v){
+  return String(v==null?'':v).replace(/[&<>"']/g,function(ch){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch];});
+}
+function orderStatus(s){
+  return {0:'待付款',1:'已付款',2:'待取货',3:'已取货',4:'已取消'}[s]||'未知';
+}
 
 // ─── 初始化 ───
 function init(){
@@ -246,7 +265,7 @@ function loadHomeData(){
 function loadBanners(){
   ajax('/wx/ads').then(function(d){
     if(d.code===0&&d.data&&d.data.length>0){
-      var slides=d.data.map(function(a,i){return '<div class="banner-slide" style="background:'+getBannerColor(i)+';opacity:'+(i===0?1:0)+'"><span>'+a.title+'</span></div>';}).join('');
+      var slides=d.data.map(function(a,i){return '<div class="banner-slide" style="background:'+getBannerColor(i)+';opacity:'+(i===0?1:0)+'"><img src="'+html(a.image)+'" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display=\'none\'"><span style="position:absolute;text-shadow:0 2px 8px rgba(0,0,0,.35)">'+html(a.title)+'</span></div>';}).join('');
       var dots=d.data.map(function(_,i){return '<span class="banner-dot'+(i===0?' active':'')+'" onclick="slideTo('+i+')"></span>';}).join('');
       document.getElementById('bannerArea').innerHTML='<div class="banner-inner">'+slides+'</div><div class="banner-dots">'+dots+'</div>';
       startBannerAuto();
@@ -255,6 +274,7 @@ function loadBanners(){
 }
 var bannerIdx=0,bannerTotal=0,bannerTimer;
 function startBannerAuto(){
+  if(bannerTimer) clearInterval(bannerTimer);
   bannerTotal=document.querySelectorAll('.banner-slide').length;
   if(bannerTotal<=1)return;
   bannerTimer=setInterval(function(){
@@ -283,16 +303,17 @@ function loadCategories(){
   ajax('/wx/categories').then(function(d){
     if(d.code===0){
       var emojis=['🍎','🥬','🥩','🦐','🧂','🍪'];
-      var h='<div class="cat-item active" onclick="filterCat(\'\')"><div class="icon">🔥</div><div class="name">全部</div></div>';
-      d.data.forEach(function(c,i){h+='<div class="cat-item" onclick="filterCat('+c.id+')"><div class="icon">'+emojis[i%6]+'</div><div class="name">'+c.name+'</div></div>';});
+      var h='<div class="cat-item active" onclick="filterCat(\'\',this)"><div class="icon">🔥</div><div class="name">全部</div></div>';
+      d.data.forEach(function(c,i){h+='<div class="cat-item" onclick="filterCat('+c.id+',this)"><div class="icon">'+emojis[i%6]+'</div><div class="name">'+html(c.name)+'</div></div>';});
       document.getElementById('catNav').innerHTML=h;
     }
   });
 }
-function filterCat(id){
+function filterCat(id,el){
   currentCat=id||'';
   document.querySelectorAll('.cat-item').forEach(function(el){el.classList.remove('active');});
-  if(id===''){document.querySelectorAll('.cat-item')[0].classList.add('active');}
+  if(el) el.classList.add('active');
+  else if(id===''){document.querySelectorAll('.cat-item')[0].classList.add('active');}
   loadAllGoods();
 }
 
@@ -327,8 +348,8 @@ function renderGoods(containerId,list,isHot){
     var canBuy=true,reason='';
     if(c.sale_start_time&&new Date(c.sale_start_time)>new Date()){canBuy=false;reason='预售中';}
     h+='<div class="goods-card" onclick="showDetail('+c.id+')">';
-    h+='<img class="img" src="'+c.image+'" onerror="this.style.background=\'linear-gradient(135deg,#FF6B35,#FF8C5A)\';this.src=\'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 200 200%22><text x=%22100%22 y=%22110%22 text-anchor=%22middle%22 fill=%22white%22 font-size=%2240%22>🍊</text></svg>\'">';
-    h+='<div class="info"><div class="name">'+c.name;
+    h+='<img class="img" src="'+html(c.image)+'" onerror="this.style.background=\'linear-gradient(135deg,#FF6B35,#FF8C5A)\';this.src=\'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 200 200%22><text x=%22100%22 y=%22110%22 text-anchor=%22middle%22 fill=%22white%22 font-size=%2240%22>🍊</text></svg>\'">';
+    h+='<div class="info"><div class="name">'+html(c.name);
     if(c.is_groupon==1) h+=' <span class="tag">团购</span>';
     if(reason) h+=' <span class="tag">'+reason+'</span>';
     h+='</div>';
@@ -352,14 +373,14 @@ function showDetail(id){
       var c=d.data;
       var canBuy=true;
       if(c.sale_start_time&&new Date(c.sale_start_time)>new Date())canBuy=false;
-      var h='<img class="img" src="'+c.image+'" onerror="this.style.background=\'#f5f5f5\'">';
-      h+='<div class="body"><div class="name">'+c.name;
+      var h='<img class="img" src="'+html(c.image)+'" onerror="this.style.background=\'#f5f5f5\'">';
+      h+='<div class="body"><div class="name">'+html(c.name);
       if(c.is_groupon==1)h+=' <span class="tag">团购</span>';
       h+='</div>';
       h+='<div class="price">¥'+c.price+'</div>';
       if(c.is_groupon==1&&c.group_price>0)h+='<p style="color:var(--primary);margin-bottom:8px">团购价: ¥'+c.group_price+'</p>';
       if(c.sale_start_time)h+='<p style="font-size:12px;color:#999">预售开始: '+c.sale_start_time+'</p>';
-      h+='<div class="desc">'+c.description+'</div>';
+      h+='<div class="desc">'+html(c.description)+'</div>';
       h+='<div style="color:#999;font-size:13px">库存: '+c.stock+' | 已售: '+c.sales+'</div>';
       h+='<div class="actions" style="margin-top:12px">';
       h+='<button class="btn-cart" onclick="addCart('+c.id+')">加入购物车</button>';
@@ -418,7 +439,13 @@ function updateQty(id,q){
   ajax('/wx/cart/'+id,'PUT',{quantity:q}).then(function(){loadCart();});
 }
 function deleteCartItem(id){ajax('/wx/cart/'+id,'DELETE').then(function(d){toast(d.msg);loadCart();});}
-function checkAllCart(){ajax('/wx/cart/check-all','PUT',{checked:1}).then(function(){loadCart();});}
+function checkAllCart(){
+  ajax('/wx/cart').then(function(d){
+    var items=d.data||[];
+    var target=items.some(function(it){return it.checked!=1;})?1:0;
+    ajax('/wx/cart/check-all','PUT',{checked:target}).then(function(){loadCart();});
+  });
+}
 function clearCart(){ajax('/wx/cart/clear','DELETE').then(function(d){toast(d.msg);loadCart();});}
 
 function submitOrder(){
@@ -431,7 +458,7 @@ function submitOrder(){
       if(items.length===0){toast('请勾选要结算的商品');return;}
       ajax('/wx/orders','POST',{items:items,store_id:storeId}).then(function(r){
         toast(r.msg);
-        if(r.code===0){loadCart();loadCartStores();}
+        if(r.code===0){loadCart();loadCartStores();switchPage('order');}
       });
     }
   });
@@ -470,6 +497,28 @@ function loadMessages(){
 }
 function readMsg(id){ajax('/wx/messages/'+id+'/read','PUT').then(function(){loadMessages();});}
 
+// ─── 订单 ───
+function loadOrders(){
+  if(!TOKEN)return;
+  ajax('/wx/orders').then(function(d){
+    if(d.code===0){
+      var list=d.data||[];
+      if(list.length===0){document.getElementById('orderList').innerHTML='<div style="text-align:center;padding:40px;color:#999">暂无订单</div>';return;}
+      var h='';
+      list.forEach(function(o){
+        h+='<div class="order-card"><div class="top"><span>'+html(o.order_no)+'</span><b>'+orderStatus(o.status)+'</b></div>';
+        (o.items||[]).forEach(function(i){h+='<div class="item"><span>'+html(i.commodity_name)+' x'+i.quantity+'</span><span>¥'+i.price+'</span></div>';});
+        h+='<div style="font-size:12px;color:#999;margin-top:8px">自提门店：'+html(o.store_name||'未选择')+'　取货码：'+html(o.pickup_code||'-')+'</div>';
+        h+='<div class="foot"><b>合计 ¥'+Number(o.total_amount||0).toFixed(2)+'</b>';
+        if(o.status==2) h+='<button onclick="confirmOrder('+o.id+')">确认取货</button>';
+        h+='</div></div>';
+      });
+      document.getElementById('orderList').innerHTML=h;
+    }
+  });
+}
+function confirmOrder(id){ajax('/wx/orders/'+id+'/confirm','PUT').then(function(d){toast(d.msg);loadOrders();});}
+
 // ─── 个人中心 ───
 function loadProfile(){
   if(!TOKEN)return;
@@ -495,11 +544,12 @@ function delRemind(id){ajax('/wx/groupon/reminds/'+id,'DELETE').then(function(d)
 
 // ─── 页面切换 ───
 function switchPage(page){
-  document.querySelectorAll('#page-home,#page-cart,#page-msg,#page-me').forEach(function(el){el.style.display='none';});
+  document.querySelectorAll('#page-home,#page-cart,#page-order,#page-msg,#page-me').forEach(function(el){el.style.display='none';});
   document.getElementById('page-'+page).style.display='block';
   document.querySelectorAll('.nav-item').forEach(function(el){el.classList.remove('active');});
   document.querySelector('.nav-item[data-page="'+page+'"]').classList.add('active');
   if(page==='cart'){loadCart();loadCartStores();}
+  if(page==='order') loadOrders();
   if(page==='msg') loadMessages();
   if(page==='me') loadProfile();
   if(page==='home') loadHomeData();

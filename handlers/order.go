@@ -60,6 +60,10 @@ func WxCreateOrder(db *gorm.DB) gin.HandlerFunc {
 			if qty <= 0 {
 				qty = 1
 			}
+			if com.Stock < qty {
+				c.JSON(http.StatusOK, models.Result{Code: 400, Msg: fmt.Sprintf("商品「%s」库存不足", com.Name)})
+				return
+			}
 			total += price * float64(qty)
 		}
 
@@ -103,19 +107,30 @@ func WxCreateOrder(db *gorm.DB) gin.HandlerFunc {
 			if com.IsGroupon == 1 && com.GroupPrice > 0 && com.GroupStartTime != nil && com.GroupStartTime.Before(time.Now()) {
 				price = com.GroupPrice
 			}
+			qty := it.Quantity
+			if qty <= 0 {
+				qty = 1
+			}
 			tx.Create(&models.OrderItem{
 				OrderID:       order.ID,
 				CommodityID:   com.ID,
 				CommodityName: com.Name,
 				Price:         price,
-				Quantity:      it.Quantity,
+				Quantity:      qty,
 				Image:         com.Image,
 			})
-			// 更新销量与库存
-			tx.Model(&com).Updates(map[string]interface{}{
-				"sales": com.Sales + it.Quantity,
-				"stock": com.Stock - it.Quantity,
-			})
+			// 更新销量与库存（防止并发超卖）
+			res := tx.Model(&models.Commodity{}).
+				Where("id = ? AND stock >= ?", com.ID, qty).
+				Updates(map[string]interface{}{
+					"sales": gorm.Expr("sales + ?", qty),
+					"stock": gorm.Expr("stock - ?", qty),
+				})
+			if res.Error != nil || res.RowsAffected == 0 {
+				tx.Rollback()
+				c.JSON(http.StatusOK, models.Result{Code: 400, Msg: fmt.Sprintf("商品「%s」库存不足", com.Name)})
+				return
+			}
 		}
 
 		// 清空购物车中已结算的项目

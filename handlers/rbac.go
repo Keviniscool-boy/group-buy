@@ -3,6 +3,7 @@ package handlers
 import (
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -30,11 +31,7 @@ func CreateRole(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 		db.Create(&role)
-		// 建立权限关联
-		if role.Menus != "" {
-			// menus 格式: "1,2,3"
-			// 此处可扩展写入 cs_authority 表
-		}
+		syncRoleAuthorities(db, role.ID, role.Menus)
 		c.JSON(http.StatusOK, models.Result{Code: 0, Msg: "新增成功"})
 	}
 }
@@ -50,6 +47,7 @@ func UpdateRole(db *gorm.DB) gin.HandlerFunc {
 		}
 		c.ShouldBindJSON(&role)
 		db.Save(&role)
+		syncRoleAuthorities(db, role.ID, role.Menus)
 		c.JSON(http.StatusOK, models.Result{Code: 0, Msg: "修改成功"})
 	}
 }
@@ -132,9 +130,36 @@ func SaveAuthorities(db *gorm.DB) gin.HandlerFunc {
 		for _, menuID := range req.MenuIDs {
 			db.Create(&models.Authority{RoleID: req.RoleID, MenuID: menuID})
 		}
+		db.Model(&models.Role{}).Where("id = ?", req.RoleID).Update("menus", joinMenuIDs(req.MenuIDs))
 
 		c.JSON(http.StatusOK, models.Result{Code: 0, Msg: "权限保存成功"})
 	}
+}
+
+func syncRoleAuthorities(db *gorm.DB, roleID uint, menus string) {
+	db.Where("role_id = ?", roleID).Delete(&models.Authority{})
+	for _, part := range strings.Split(menus, ",") {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+		menuID, err := strconv.ParseUint(part, 10, 64)
+		if err != nil || menuID == 0 {
+			continue
+		}
+		db.Create(&models.Authority{RoleID: roleID, MenuID: uint(menuID)})
+	}
+}
+
+func joinMenuIDs(ids []uint) string {
+	parts := make([]string, 0, len(ids))
+	for _, id := range ids {
+		if id == 0 {
+			continue
+		}
+		parts = append(parts, strconv.FormatUint(uint64(id), 10))
+	}
+	return strings.Join(parts, ",")
 }
 
 // ─── 团长销量查询 ──────────────────────────────────
@@ -144,10 +169,10 @@ func LeaderSales(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// 回传各门店的订单统计（模拟团长销量）
 		type StoreSales struct {
-			StoreID     uint    `json:"store_id"`
-			StoreName   string  `json:"store_name"`
-			OrderCount  int64   `json:"order_count"`
-			TotalSales  float64 `json:"total_sales"`
+			StoreID    uint    `json:"store_id"`
+			StoreName  string  `json:"store_name"`
+			OrderCount int64   `json:"order_count"`
+			TotalSales float64 `json:"total_sales"`
 		}
 		var results []StoreSales
 		db.Model(&models.Order{}).

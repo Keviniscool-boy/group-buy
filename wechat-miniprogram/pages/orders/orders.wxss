@@ -1,0 +1,9 @@
+.top, .line, .foot {
+  display: flex;
+  justify-content: space-between;
+  gap: 20rpx;
+}
+.top { padding-bottom: 14rpx; border-bottom: 1rpx solid #eee; }
+.line { margin-top: 14rpx; color: #444; }
+.foot { align-items: center; margin-top: 18rpx; }
+.foot button { border-radius: 999rpx; background: #ff6b35; color: #fff; }

@@ -29,6 +29,50 @@ func ListAdmins(db *gorm.DB) gin.HandlerFunc {
 	}
 }
 
+// CreateAdmin POST /admin/admins
+func CreateAdmin(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var req struct {
+			Username string `json:"username" binding:"required"`
+			Password string `json:"password" binding:"required"`
+			RoleID   uint   `json:"role_id"`
+			RoleName string `json:"role_name"`
+			Status   int    `json:"status"`
+		}
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusOK, models.Result{Code: 400, Msg: "参数错误"})
+			return
+		}
+		var exist models.Admin
+		if db.Where("username = ?", req.Username).First(&exist).Error == nil {
+			c.JSON(http.StatusOK, models.Result{Code: 400, Msg: "管理员账号已存在"})
+			return
+		}
+		if req.RoleName == "" && req.RoleID > 0 {
+			var role models.Role
+			if db.First(&role, req.RoleID).Error == nil {
+				req.RoleName = role.Name
+			}
+		}
+		if req.RoleName == "" {
+			req.RoleName = "业务管理员"
+		}
+		if req.Status != 0 {
+			req.Status = 1
+		}
+		hashed, _ := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+		admin := models.Admin{
+			Username: req.Username,
+			Password: string(hashed),
+			RoleID:   req.RoleID,
+			RoleName: req.RoleName,
+			Status:   req.Status,
+		}
+		db.Create(&admin)
+		c.JSON(http.StatusOK, models.Result{Code: 0, Msg: "新增成功", Data: admin})
+	}
+}
+
 // UpdateAdmin PUT /admin/admins/:id
 func UpdateAdmin(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -64,6 +108,10 @@ func UpdateAdmin(db *gorm.DB) gin.HandlerFunc {
 func DeleteAdmin(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
+		if strconv.FormatUint(uint64(c.GetUint("userID")), 10) == id {
+			c.JSON(http.StatusOK, models.Result{Code: 400, Msg: "不能删除当前登录管理员"})
+			return
+		}
 		db.Delete(&models.Admin{}, id)
 		c.JSON(http.StatusOK, models.Result{Code: 0, Msg: "删除成功"})
 	}
@@ -97,10 +145,13 @@ func ListUsers(db *gorm.DB) gin.HandlerFunc {
 func DeleteUser(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
-		db.Delete(&models.User{}, id)
-		// 同时删除该用户的购物车
+		var carts []models.ShoppingCart
+		db.Where("user_id = ?", id).Find(&carts)
+		for _, cart := range carts {
+			db.Where("cart_id = ?", cart.ID).Delete(&models.CartItem{})
+		}
 		db.Where("user_id = ?", id).Delete(&models.ShoppingCart{})
-		db.Where("user_id = ?", id).Delete(&models.CartItem{})
+		db.Delete(&models.User{}, id)
 		c.JSON(http.StatusOK, models.Result{Code: 0, Msg: "删除成功"})
 	}
 }

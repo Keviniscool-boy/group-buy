@@ -1,0 +1,27 @@
+<view class="page">
+  <view class="cart-item" wx:for="{{items}}" wx:key="id">
+    <view class="check {{item.checked==1?'on':''}}" bindtap="toggleCheck" data-id="{{item.id}}" data-checked="{{item.checked}}">{{item.checked==1?'✓':''}}</view>
+    <image src="{{item.image}}" mode="aspectFill"></image>
+    <view class="info">
+      <view class="name">{{item.commodity_name}}</view>
+      <view class="price">￥{{item.price}}</view>
+      <view class="qty">
+        <button size="mini" bindtap="changeQty" data-id="{{item.id}}" data-qty="{{item.quantity - 1}}">-</button>
+        <text>{{item.quantity}}</text>
+        <button size="mini" bindtap="changeQty" data-id="{{item.id}}" data-qty="{{item.quantity + 1}}">+</button>
+      </view>
+    </view>
+    <button size="mini" bindtap="removeItem" data-id="{{item.id}}">删</button>
+  </view>
+  <view class="empty" wx:if="{{!items.length}}">购物车是空的</view>
+
+  <view class="settle" wx:if="{{items.length}}">
+    <picker mode="selector" range="{{stores}}" range-key="name" bindchange="selectStore">
+      <view class="store">{{storeName || '请选择自提门店'}}</view>
+    </picker>
+    <view class="bar">
+      <text>合计 <text class="price">￥{{total}}</text></text>
+      <button class="primary" bindtap="submitOrder">立即结算</button>
+    </view>
+  </view>
+</view>

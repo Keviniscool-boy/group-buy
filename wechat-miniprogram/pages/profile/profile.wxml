@@ -1,0 +1,17 @@
+<view class="page">
+  <view class="card">
+    <view class="label">昵称</view>
+    <input value="{{profile.nickname}}" bindinput="onNickname" />
+    <view class="label">电话</view>
+    <input value="{{profile.phone}}" bindinput="onPhone" />
+    <button class="primary" bindtap="saveProfile">保存资料</button>
+  </view>
+  <view class="card">
+    <view class="title">我的团购提醒</view>
+    <view class="remind" wx:for="{{reminds}}" wx:key="id">
+      <text>{{item.commodity_name}}</text>
+      <button size="mini" bindtap="deleteRemind" data-id="{{item.id}}">取消</button>
+    </view>
+    <view class="empty" wx:if="{{!reminds.length}}">暂无提醒</view>
+  </view>
+</view>

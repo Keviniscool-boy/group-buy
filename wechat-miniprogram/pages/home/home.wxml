@@ -1,0 +1,51 @@
+<view class="page">
+  <view class="hero">
+    <view class="title">智享社区团购</view>
+    <view class="sub">新鲜每一天 · 实惠每一家</view>
+  </view>
+
+  <view class="notice" wx:if="{{notice}}">📢 {{notice.title}}：{{notice.content}}</view>
+
+  <view class="search">
+    <input placeholder="搜索水果、蔬菜、肉类..." value="{{keyword}}" bindinput="onKeyword" confirm-type="search" bindconfirm="searchGoods" />
+    <button bindtap="searchGoods">搜索</button>
+  </view>
+
+  <swiper class="banner" autoplay circular indicator-dots wx:if="{{ads.length}}">
+    <swiper-item wx:for="{{ads}}" wx:key="id">
+      <image src="{{item.image}}" mode="aspectFill"></image>
+      <view class="banner-title">{{item.title}}</view>
+    </swiper-item>
+  </swiper>
+
+  <scroll-view scroll-x class="cats">
+    <view class="cat {{currentCat===''?'active':''}}" bindtap="selectCat" data-id="">全部</view>
+    <view class="cat {{currentCat===item.id?'active':''}}" wx:for="{{categories}}" wx:key="id" bindtap="selectCat" data-id="{{item.id}}">{{item.name}}</view>
+  </scroll-view>
+
+  <view class="section-title">限时团购</view>
+  <view class="goods-grid">
+    <view class="goods-card" wx:for="{{hotGoods}}" wx:key="id" bindtap="goDetail" data-id="{{item.id}}">
+      <image src="{{item.image}}" mode="aspectFill"></image>
+      <view class="info">
+        <view class="name">{{item.name}}</view>
+        <view><text class="price">￥{{item.group_price || item.price}}</text><text class="tag">团购</text></view>
+      </view>
+    </view>
+  </view>
+
+  <view class="section-title">全部商品</view>
+  <view class="goods-grid">
+    <view class="goods-card" wx:for="{{goods}}" wx:key="id" bindtap="goDetail" data-id="{{item.id}}">
+      <image src="{{item.image}}" mode="aspectFill"></image>
+      <view class="info">
+        <view class="name">{{item.name}}</view>
+        <view class="row">
+          <text class="price">￥{{item.price}}</text>
+          <text class="muted">库存 {{item.stock}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+  <view class="empty" wx:if="{{!goods.length}}">暂无商品</view>
+</view>

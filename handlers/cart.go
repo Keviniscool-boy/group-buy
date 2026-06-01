@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -29,6 +30,21 @@ func WxAddToCart(db *gorm.DB) gin.HandlerFunc {
 			c.JSON(http.StatusOK, models.Result{Code: 400, Msg: "商品不存在"})
 			return
 		}
+		if com.Status != 1 {
+			c.JSON(http.StatusOK, models.Result{Code: 400, Msg: "商品已下架"})
+			return
+		}
+		if com.SaleStartTime != nil && com.SaleStartTime.After(time.Now()) {
+			c.JSON(http.StatusOK, models.Result{Code: 400, Msg: "商品尚未开售，可先订阅提醒"})
+			return
+		}
+		if req.Quantity <= 0 {
+			req.Quantity = 1
+		}
+		if com.Stock < req.Quantity {
+			c.JSON(http.StatusOK, models.Result{Code: 400, Msg: "商品库存不足"})
+			return
+		}
 
 		// 找到或建立购物车
 		var cart models.ShoppingCart
@@ -41,6 +57,10 @@ func WxAddToCart(db *gorm.DB) gin.HandlerFunc {
 		// 检查购物车中是否已有此商品
 		var existItem models.CartItem
 		if db.Where("cart_id = ? AND commodity_id = ?", cart.ID, req.CommodityID).First(&existItem).Error == nil {
+			if com.Stock < existItem.Quantity+req.Quantity {
+				c.JSON(http.StatusOK, models.Result{Code: 400, Msg: "商品库存不足"})
+				return
+			}
 			existItem.Quantity += req.Quantity
 			if existItem.Quantity <= 0 {
 				db.Delete(&existItem)

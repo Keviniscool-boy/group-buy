@@ -1,0 +1,18 @@
+<view class="page">
+  <view class="card order" wx:for="{{orders}}" wx:key="id">
+    <view class="top">
+      <text>{{item.order_no}}</text>
+      <text class="tag">{{statusMap[item.status]}}</text>
+    </view>
+    <view class="line" wx:for="{{item.items}}" wx:for-item="goods" wx:key="id">
+      <text>{{goods.commodity_name}} x{{goods.quantity}}</text>
+      <text>￥{{goods.price}}</text>
+    </view>
+    <view class="muted">门店：{{item.store_name || '未选择'}}　取货码：{{item.pickup_code || '-'}}</view>
+    <view class="foot">
+      <text class="price">￥{{item.total_amount}}</text>
+      <button wx:if="{{item.status==2}}" size="mini" bindtap="confirmOrder" data-id="{{item.id}}">确认取货</button>
+    </view>
+  </view>
+  <view class="empty" wx:if="{{!orders.length}}">暂无订单</view>
+</view>

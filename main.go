@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"time"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -77,10 +78,16 @@ func main() {
 	r.GET("/admin/commodity", func(c *gin.Context) {
 		c.HTML(200, "admin_dashboard.html", nil)
 	})
+	r.GET("/admin/category", func(c *gin.Context) {
+		c.HTML(200, "admin_dashboard.html", nil)
+	})
 	r.GET("/admin/order", func(c *gin.Context) {
 		c.HTML(200, "admin_dashboard.html", nil)
 	})
 	r.GET("/admin/user", func(c *gin.Context) {
+		c.HTML(200, "admin_dashboard.html", nil)
+	})
+	r.GET("/admin/admin-manager", func(c *gin.Context) {
 		c.HTML(200, "admin_dashboard.html", nil)
 	})
 	r.GET("/admin/role", func(c *gin.Context) {
@@ -93,6 +100,9 @@ func main() {
 		c.HTML(200, "admin_dashboard.html", nil)
 	})
 	r.GET("/admin/ads", func(c *gin.Context) {
+		c.HTML(200, "admin_dashboard.html", nil)
+	})
+	r.GET("/admin/message", func(c *gin.Context) {
 		c.HTML(200, "admin_dashboard.html", nil)
 	})
 	r.GET("/mock-wx", func(c *gin.Context) {
@@ -119,6 +129,7 @@ func main() {
 
 			// 管理员管理
 			auth.GET("/admins", handlers.ListAdmins(db))
+			auth.POST("/admins", handlers.CreateAdmin(db))
 			auth.PUT("/admins/:id", handlers.UpdateAdmin(db))
 			auth.DELETE("/admins/:id", handlers.DeleteAdmin(db))
 
@@ -305,6 +316,120 @@ func seedData(db *gorm.DB) {
 		}
 		for _, s := range stores {
 			db.Create(&s)
+		}
+	}
+
+	// ── 建立预设商品 ──────────────────────────
+	var commodityCount int64
+	db.Model(&models.Commodity{}).Count(&commodityCount)
+	if commodityCount == 0 {
+		var cats []models.CommodityCategory
+		db.Find(&cats)
+		catMap := map[string]uint{}
+		for _, c := range cats {
+			catMap[c.Name] = c.ID
+		}
+
+		now := time.Now()
+		commodities := []models.Commodity{
+			{
+				Name:           "福建平和蜜柚",
+				CategoryID:     catMap["新鲜水果"],
+				CategoryName:   "新鲜水果",
+				Price:          19.90,
+				GroupPrice:     16.90,
+				Stock:          200,
+				Image:          "https://picsum.photos/seed/pomelo/400/400",
+				Description:    "清甜多汁，适合家庭分享。",
+				IsGroupon:      1,
+				GroupStartTime: &now,
+			},
+			{
+				Name:          "阳光草莓 500g",
+				CategoryID:    catMap["新鲜水果"],
+				CategoryName:  "新鲜水果",
+				Price:         29.90,
+				Stock:         120,
+				Image:         "https://picsum.photos/seed/strawberry/400/400",
+				Description:   "香甜多汁，冷藏口感更佳。",
+				SaleStartTime: &now,
+			},
+			{
+				Name:         "有机青菜 300g",
+				CategoryID:   catMap["时令蔬菜"],
+				CategoryName: "时令蔬菜",
+				Price:        6.80,
+				Stock:        300,
+				Image:        "https://picsum.photos/seed/greens/400/400",
+				Description:  "当日采摘，新鲜直达。",
+			},
+			{
+				Name:         "散养土鸡蛋 10枚",
+				CategoryID:   catMap["肉禽蛋奶"],
+				CategoryName: "肉禽蛋奶",
+				Price:        19.80,
+				Stock:        160,
+				Image:        "https://picsum.photos/seed/eggs/400/400",
+				Description:  "蛋黄饱满，口感更香。",
+			},
+			{
+				Name:         "冷冻对虾 500g",
+				CategoryID:   catMap["海鲜水产"],
+				CategoryName: "海鲜水产",
+				Price:        36.90,
+				Stock:        80,
+				Image:        "https://picsum.photos/seed/shrimp/400/400",
+				Description:  "肉质紧实，适合家常烹饪。",
+			},
+			{
+				Name:         "橄榄油 500ml",
+				CategoryID:   catMap["粮油调味"],
+				CategoryName: "粮油调味",
+				Price:        49.90,
+				Stock:        60,
+				Image:        "https://picsum.photos/seed/oil/400/400",
+				Description:  "清香不腻，适合凉拌与轻炒。",
+			},
+			{
+				Name:         "坚果礼包 350g",
+				CategoryID:   catMap["休闲零食"],
+				CategoryName: "休闲零食",
+				Price:        25.90,
+				Stock:        140,
+				Image:        "https://picsum.photos/seed/nuts/400/400",
+				Description:  "多种坚果搭配，营养均衡。",
+			},
+		}
+		for _, c := range commodities {
+			if c.CategoryID > 0 {
+				db.Create(&c)
+			}
+		}
+	}
+
+	// ── 建立预设广告 ──────────────────────────
+	var adsCount int64
+	db.Model(&models.Ads{}).Count(&adsCount)
+	if adsCount == 0 {
+		ads := []models.Ads{
+			{Title: "本周爆品", Image: "https://picsum.photos/seed/banner1/800/400", Link: "/mock-wx", Sort: 1, Status: 1},
+			{Title: "新人专享", Image: "https://picsum.photos/seed/banner2/800/400", Link: "/mock-wx", Sort: 2, Status: 1},
+		}
+		for _, a := range ads {
+			db.Create(&a)
+		}
+	}
+
+	// ── 建立预设公告 ──────────────────────────
+	var annCount int64
+	db.Model(&models.Announcement{}).Count(&annCount)
+	if annCount == 0 {
+		anns := []models.Announcement{
+			{Title: "今日下单，次日自提", Content: "请在营业时间内到门店自提。", Status: 1},
+			{Title: "团购开启", Content: "团购价商品数量有限，先到先得。", Status: 1},
+		}
+		for _, a := range anns {
+			db.Create(&a)
 		}
 	}
 }

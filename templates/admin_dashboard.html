@@ -7,43 +7,48 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/layui@2.9.8/dist/css/layui.css">
 <style>
   *{margin:0;padding:0;box-sizing:border-box;}
-  body{font-family:'Microsoft YaHei',sans-serif;background:#f5f5f5;}
-  .header{height:60px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 24px;position:fixed;top:0;left:0;right:0;z-index:1000;}
+  :root{--primary:#ff6b35;--primary-dark:#e4572e;--primary-soft:#fff1eb;--text:#2b2f36;--muted:#7b8897;--border:#e7e9ee;}
+  body{font-family:'Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif;background:#f6f6f9;color:var(--text);}
+  .header{height:60px;background:linear-gradient(135deg,#ff6b35,#ff9f6e);color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 24px;position:fixed;top:0;left:0;right:0;z-index:1000;}
   .header h2{font-size:20px;font-weight:600;}
   .header .right{display:flex;align-items:center;gap:16px;font-size:14px;}
   .header .right button{background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.4);padding:6px 16px;border-radius:6px;cursor:pointer;font-size:13px;}
-  .sidebar{width:200px;background:#fff;position:fixed;top:60px;left:0;bottom:0;overflow-y:auto;box-shadow:2px 0 8px rgba(0,0,0,.06);z-index:999;}
+  .sidebar{width:200px;background:#fff;position:fixed;top:60px;left:0;bottom:0;overflow-y:auto;box-shadow:2px 0 10px rgba(0,0,0,.06);z-index:999;border-right:1px solid var(--border);}
   .sidebar .menu-item{display:block;padding:14px 20px;color:#555;font-size:14px;cursor:pointer;border-left:3px solid transparent;transition:all .2s;text-decoration:none;}
-  .sidebar .menu-item:hover{background:#f0f3ff;color:#667eea;}
-  .sidebar .menu-item.active{background:#f0f3ff;color:#667eea;border-left-color:#667eea;font-weight:600;}
+  .sidebar .menu-item:hover{background:var(--primary-soft);color:var(--primary-dark);}
+  .sidebar .menu-item.active{background:var(--primary-soft);color:var(--primary-dark);border-left-color:var(--primary-dark);font-weight:600;}
   .sidebar .menu-item i{margin-right:8px;}
   .main-content{margin-left:200px;margin-top:60px;padding:24px;min-height:calc(100vh - 60px);}
   .section{display:none;}
   .section.active{display:block;}
-  .card{background:#fff;border-radius:10px;padding:20px;margin-bottom:20px;box-shadow:0 2px 8px rgba(0,0,0,.06);}
-  .card h4{margin-bottom:16px;color:#333;font-size:16px;}
+  .card{background:#fff;border-radius:12px;padding:20px;margin-bottom:20px;box-shadow:0 6px 18px rgba(30,32,37,.06);border:1px solid var(--border);}
+  .card h4{margin-bottom:16px;color:var(--text);font-size:16px;}
   .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:20px;}
-  .stat-card{background:#fff;border-radius:10px;padding:20px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.06);}
-  .stat-card .num{font-size:32px;font-weight:700;color:#667eea;}
-  .stat-card .label{color:#999;font-size:13px;margin-top:6px;}
+  .stat-card{background:#fff;border-radius:12px;padding:20px;text-align:center;box-shadow:0 6px 18px rgba(30,32,37,.06);border:1px solid var(--border);}
+  .stat-card .num{font-size:32px;font-weight:700;color:var(--primary-dark);}
+  .stat-card .label{color:var(--muted);font-size:13px;margin-top:6px;}
   .toolbar{display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;align-items:center;}
-  .toolbar input,.toolbar select{height:38px;border:1px solid #ddd;border-radius:6px;padding:0 12px;font-size:14px;}
-  .toolbar button{padding:8px 20px;background:#667eea;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:14px;}
+  .toolbar input,.toolbar select{height:38px;border:1px solid var(--border);border-radius:8px;padding:0 12px;font-size:14px;background:#fff;}
+  .toolbar button{padding:8px 20px;background:var(--primary);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:14px;}
   .toolbar button:hover{opacity:.9;}
-  .toolbar button.green{background:#5cb85c;}
-  .toolbar button.orange{background:#f0ad4e;}
-  .toolbar button.red{background:#d9534f;}
+  .toolbar button.green{background:#3fb950;}
+  .toolbar button.orange{background:#f59f00;}
+  .toolbar button.red{background:#e03131;}
   .status-tag{padding:3px 10px;border-radius:12px;font-size:12px;}
   .status-0{background:#f0ad4e;color:#fff;}
   .status-1{background:#5cb85c;color:#fff;}
   .status-2{background:#5bc0de;color:#fff;}
-  .status-3{background:#667eea;color:#fff;}
+  .status-3{background:var(--primary-dark);color:#fff;}
   .status-4{background:#999;color:#fff;}
   .layui-table-cell .layui-btn-xs{margin:0 3px;}
   .form-row{display:flex;gap:12px;margin-bottom:14px;flex-wrap:wrap;}
   .form-row label{width:100px;text-align:right;line-height:38px;color:#666;font-size:14px;}
-  .form-row input,.form-row select,.form-row textarea{flex:1;min-width:200px;height:38px;border:1px solid #ddd;border-radius:6px;padding:0 12px;font-size:14px;}
+  .form-row input,.form-row select,.form-row textarea{flex:1;min-width:200px;height:38px;border:1px solid var(--border);border-radius:8px;padding:0 12px;font-size:14px;}
   .form-row textarea{height:80px;padding:10px 12px;}
+  .empty-row{color:var(--muted);text-align:center;padding:18px 0;}
+  .pager{display:flex;align-items:center;justify-content:flex-end;gap:10px;margin-top:12px;color:var(--muted);font-size:13px;}
+  .pager button{border:1px solid var(--border);background:#fff;border-radius:6px;padding:6px 12px;cursor:pointer;}
+  .pager button:disabled{opacity:.45;cursor:not-allowed;}
 </style>
 </head>
 <body>
@@ -62,12 +67,15 @@
 <div class="sidebar">
   <a class="menu-item active" data-page="dashboard"><i>📊</i> 仪表板</a>
   <a class="menu-item" data-page="commodity"><i>🛒</i> 商品管理</a>
+  <a class="menu-item" data-page="category"><i>🗂</i> 分类管理</a>
   <a class="menu-item" data-page="order"><i>📋</i> 订单管理</a>
   <a class="menu-item" data-page="user"><i>👥</i> 用户管理</a>
+  <a class="menu-item" data-page="admin"><i>🛡️</i> 管理员</a>
   <a class="menu-item" data-page="store"><i>📍</i> 门店管理</a>
   <a class="menu-item" data-page="role"><i>🔐</i> 角色管理</a>
   <a class="menu-item" data-page="ads"><i>🖼️</i> 广告管理</a>
   <a class="menu-item" data-page="announcement"><i>📢</i> 公告管理</a>
+  <a class="menu-item" data-page="message"><i>✉</i> 消息群发</a>
 </div>
 
 <!-- 主内容区 -->
@@ -92,13 +100,27 @@
         <select id="comCatFilter"><option value="">全部分类</option></select>
         <input type="text" id="comKeyword" placeholder="搜索商品名称">
         <button onclick="loadCommodities()">🔍 搜索</button>
-        <button class="green" onclick="showComForm()">＋ 发布商品</button>
+        <button class="green" onclick="quickAddCommodity()">＋ 发布商品</button>
       </div>
       <table class="layui-table" lay-skin="line">
         <thead><tr><th>ID</th><th>图片</th><th>名称</th><th>分类</th><th>价格</th><th>团购价</th><th>库存</th><th>销量</th><th>状态</th><th>团购</th><th>操作</th></tr></thead>
         <tbody id="comTbody"></tbody>
       </table>
       <div id="comPage"></div>
+    </div>
+  </div>
+
+  <!-- ═══ 分类管理 ═══ -->
+  <div class="section" id="sec-category">
+    <div class="card">
+      <h4>商品分类</h4>
+      <div class="toolbar">
+        <button class="green" onclick="quickAddCategory()">＋ 新增分类</button>
+      </div>
+      <table class="layui-table" lay-skin="line">
+        <thead><tr><th>ID</th><th>分类名称</th><th>图标URL</th><th>排序</th><th>创建时间</th><th>操作</th></tr></thead>
+        <tbody id="catTbody"></tbody>
+      </table>
     </div>
   </div>
 
@@ -135,11 +157,25 @@
     </div>
   </div>
 
+  <!-- ═══ 管理员管理 ═══ -->
+  <div class="section" id="sec-admin">
+    <div class="card">
+      <h4>后台管理员</h4>
+      <div class="toolbar">
+        <button class="green" onclick="quickAddAdmin()">＋ 新增管理员</button>
+      </div>
+      <table class="layui-table" lay-skin="line">
+        <thead><tr><th>ID</th><th>账号</th><th>角色</th><th>状态</th><th>创建时间</th><th>操作</th></tr></thead>
+        <tbody id="adminTbody"></tbody>
+      </table>
+    </div>
+  </div>
+
   <!-- ═══ 门店管理 ═══ -->
   <div class="section" id="sec-store">
     <div class="card">
       <h4>自提门店</h4>
-      <button class="green" style="margin-bottom:12px" onclick="showStoreForm()">＋ 新增门店</button>
+      <button class="green" style="margin-bottom:12px" onclick="quickAddStore()">＋ 新增门店</button>
       <table class="layui-table" lay-skin="line">
         <thead><tr><th>ID</th><th>门店名称</th><th>地址</th><th>电话</th><th>团长ID</th><th>状态</th><th>操作</th></tr></thead>
         <tbody id="storeTbody"></tbody>
@@ -151,7 +187,7 @@
   <div class="section" id="sec-role">
     <div class="card">
       <h4>角色列表</h4>
-      <button class="green" style="margin-bottom:12px" onclick="showRoleForm()">＋ 新增角色</button>
+      <button class="green" style="margin-bottom:12px" onclick="quickAddRole()">＋ 新增角色</button>
       <table class="layui-table" lay-skin="line">
         <thead><tr><th>ID</th><th>角色名</th><th>描述</th><th>权限菜单</th><th>操作</th></tr></thead>
         <tbody id="roleTbody"></tbody>
@@ -163,7 +199,7 @@
   <div class="section" id="sec-ads">
     <div class="card">
       <h4>轮播广告</h4>
-      <button class="green" style="margin-bottom:12px" onclick="showAdsForm()">＋ 新增广告</button>
+      <button class="green" style="margin-bottom:12px" onclick="quickAddAds()">＋ 新增广告</button>
       <table class="layui-table" lay-skin="line">
         <thead><tr><th>ID</th><th>标题</th><th>图片URL</th><th>链接</th><th>排序</th><th>状态</th><th>操作</th></tr></thead>
         <tbody id="adsTbody"></tbody>
@@ -175,11 +211,26 @@
   <div class="section" id="sec-announcement">
     <div class="card">
       <h4>公告列表</h4>
-      <button class="green" style="margin-bottom:12px" onclick="showAnnForm()">＋ 发布公告</button>
+      <button class="green" style="margin-bottom:12px" onclick="quickAddAnn()">＋ 发布公告</button>
       <table class="layui-table" lay-skin="line">
         <thead><tr><th>ID</th><th>标题</th><th>内容</th><th>状态</th><th>时间</th><th>操作</th></tr></thead>
         <tbody id="annTbody"></tbody>
       </table>
+    </div>
+  </div>
+
+  <!-- ═══ 消息群发 ═══ -->
+  <div class="section" id="sec-message">
+    <div class="card">
+      <h4>站内消息群发</h4>
+      <div class="form-row"><label>发送对象</label><select id="msgUserID"><option value="0">全部用户</option></select></div>
+      <div class="form-row"><label>消息类型</label><select id="msgType"><option value="0">系统通知</option><option value="1">订单通知</option><option value="2">团购通知</option></select></div>
+      <div class="form-row"><label>标题</label><input id="msgTitle" class="layui-input" placeholder="例如：今晚 8 点团购开抢"></div>
+      <div class="form-row"><label>内容</label><textarea id="msgContent" class="layui-textarea" placeholder="输入要推送到小程序消息中心的内容"></textarea></div>
+      <div class="toolbar" style="padding-left:112px">
+        <button class="green" onclick="sendMessage()">发送消息</button>
+        <button onclick="quickSendMessage()">快速群发</button>
+      </div>
     </div>
   </div>
 
@@ -189,7 +240,51 @@
 <script>
 var TOKEN=localStorage.getItem('token')||'';
 var BASE='';
-var LAYER; layui.use('layer',function(m){LAYER=m.layer;});
+var LAYER=createFallbackLayer();
+if(window.layui){
+  layui.use('layer',function(m){
+    if(m && m.layer && m.layer.open) LAYER=m.layer;
+  });
+}
+var adminList=[], userList=[], categoryList=[], commodityList=[], orderList=[], storeList=[], roleList=[], adsList=[], annList=[];
+
+function createFallbackLayer(){
+  var seq=1;
+  function ensureStyle(){
+    if(document.getElementById('fallbackLayerStyle')) return;
+    var style=document.createElement('style');
+    style.id='fallbackLayerStyle';
+    style.innerHTML='.fb-mask{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:2000;display:flex;align-items:center;justify-content:center}.fb-box{background:#fff;border-radius:8px;min-width:360px;max-width:760px;max-height:86vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.25)}.fb-title{padding:14px 18px;border-bottom:1px solid #eee;font-weight:600}.fb-content{padding:0}.fb-actions{display:flex;justify-content:flex-end;gap:10px;padding:12px 18px;border-top:1px solid #eee}.fb-actions button{border:1px solid #ddd;background:#fff;border-radius:6px;padding:7px 16px;cursor:pointer}.fb-actions button:first-child{background:#ff6b35;color:#fff;border-color:#ff6b35}.fb-msg{position:fixed;top:18px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.78);color:#fff;padding:9px 18px;border-radius:18px;z-index:3000;font-size:14px}';
+    document.head.appendChild(style);
+  }
+  return {
+    open:function(opt){
+      ensureStyle();
+      var id=seq++;
+      var mask=document.createElement('div');
+      mask.className='fb-mask';
+      mask.id='fbLayer'+id;
+      mask.innerHTML='<div class="fb-box" style="width:'+(Array.isArray(opt.area)?opt.area[0]:(opt.area||'520px'))+'"><div class="fb-title">'+(opt.title||'提示')+'</div><div class="fb-content">'+(opt.content||'')+'</div><div class="fb-actions"><button data-ok>确定</button><button data-cancel>取消</button></div></div>';
+      document.body.appendChild(mask);
+      if(opt.success) setTimeout(opt.success,0);
+      mask.querySelector('[data-cancel]').onclick=function(){mask.remove();};
+      mask.querySelector('[data-ok]').onclick=function(){ if(opt.yes) opt.yes(id); else mask.remove(); };
+      return id;
+    },
+    close:function(id){var el=document.getElementById('fbLayer'+id); if(el) el.remove();},
+    msg:function(text){
+      ensureStyle();
+      var el=document.createElement('div');
+      el.className='fb-msg';
+      el.innerText=text||'';
+      document.body.appendChild(el);
+      setTimeout(function(){el.remove();},1600);
+    },
+    confirm:function(text,cb){
+      return this.open({title:'确认操作',content:'<div style="padding:20px">'+html(text)+'</div>',yes:function(id){cb(id);}});
+    }
+  };
+}
 
 // 登入检查
 if(!TOKEN){window.location.href='/admin/login';}
@@ -198,7 +293,37 @@ document.getElementById('headerRole').innerText=localStorage.getItem('adminRole'
 
 function ajax(url,method,data){
   return fetch(BASE+url,{method:method||'GET',headers:{'Content-Type':'application/json','Authorization':'Bearer '+TOKEN},body:data?JSON.stringify(data):undefined})
-    .then(function(r){return r.json();});
+    .then(function(r){return r.json();})
+    .then(function(d){
+      if(d.code===401){
+        logout();
+        return Promise.reject(d);
+      }
+      if(d.code && d.code!==0 && LAYER) LAYER.msg(d.msg||'操作失败');
+      return d;
+    })
+    .catch(function(err){
+      if(err && err.code===401) return Promise.reject(err);
+      if(LAYER) LAYER.msg('网络或服务异常');
+      return Promise.reject(err);
+    });
+}
+
+function renderEmpty(tbodyId, cols, text){
+  var el=document.getElementById(tbodyId);
+  if(!el) return;
+  el.innerHTML='<tr><td class="empty-row" colspan="'+cols+'">'+text+'</td></tr>';
+}
+
+function html(v){
+  return String(v==null?'':v).replace(/[&<>"']/g,function(ch){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch];
+  });
+}
+
+function pager(id, page, total, loader){
+  var pages=Math.max(1,Math.ceil((total||0)/10));
+  document.getElementById(id).innerHTML='<div class="pager"><button onclick="'+loader+'('+(page-1)+')" '+(page<=1?'disabled':'')+'>上一页</button><span>第 '+page+' / '+pages+' 页</span><button onclick="'+loader+'('+(page+1)+')" '+(page>=pages?'disabled':'')+'>下一页</button></div>';
 }
 
 // ─── 侧边栏切换 ───
@@ -214,12 +339,15 @@ document.querySelectorAll('.menu-item').forEach(function(el){
     // 载入对应的资料
     if(p==='dashboard') loadDashboard();
     if(p==='commodity'){ loadCategories(); loadCommodities(); }
+    if(p==='category') loadCategoryManage();
     if(p==='order') loadOrders();
     if(p==='user') loadUsers();
+    if(p==='admin') loadAdmins();
     if(p==='store') loadStores();
     if(p==='role') loadRoles();
     if(p==='ads') loadAds();
     if(p==='announcement') loadAnnouncements();
+    if(p==='message') loadMessageUsers();
   });
 });
 
@@ -228,6 +356,24 @@ function logout(){ localStorage.clear(); window.location.href='/admin/login'; }
 function statusTag(s){
   var map={0:'<span class="status-tag status-0">待付款</span>',1:'<span class="status-tag status-1">已付款</span>',2:'<span class="status-tag status-2">待取货</span>',3:'<span class="status-tag status-3">已取货</span>',4:'<span class="status-tag status-4">已取消</span>'};
   return map[s]||'<span class="status-tag">未知</span>';
+}
+
+function formatTime(v){
+  if(!v) return '';
+  return String(v).replace('T',' ').slice(0,19);
+}
+
+function notify(msg){
+  if(LAYER && LAYER.msg) LAYER.msg(msg || '操作完成');
+  else alert(msg || '操作完成');
+}
+
+function mustConfirm(text){
+  return window.confirm(text || '确认执行该操作？');
+}
+
+function showTextDialog(title, text){
+  alert((title || '详情') + '\n\n' + (text || ''));
 }
 
 // ═══ 仪表板 ═══
@@ -242,6 +388,10 @@ function loadDashboard(){
   });
   ajax('/admin/leader-sales').then(function(d){
     if(d.code===0&&d.data){
+      if(d.data.length===0){
+        document.getElementById('leaderTable').innerHTML='<div class="empty-row">暂无数据</div>';
+        return;
+      }
       var h='<table class="layui-table" lay-skin="line"><thead><tr><th>门店ID</th><th>门店名称</th><th>订单数</th><th>销售额</th></tr></thead><tbody>';
       d.data.forEach(function(r){h+='<tr><td>'+r.store_id+'</td><td>'+r.store_name+'</td><td>'+r.order_count+'</td><td>¥'+parseFloat(r.total_sales).toFixed(2)+'</td></tr>';});
       h+='</tbody></table>';
@@ -256,10 +406,65 @@ function loadCategories(){
   ajax('/admin/categories').then(function(d){
     if(d.code===0){
       var h='<option value="">全部分类</option>';
-      d.data.forEach(function(c){h+='<option value="'+c.id+'">'+c.name+'</option>';});
+      categoryList=d.data||[];
+      categoryList.forEach(function(c){h+='<option value="'+c.id+'">'+html(c.name)+'</option>';});
       document.getElementById('comCatFilter').innerHTML=h;
     }
   });
+}
+
+function loadCategoryManage(){
+  ajax('/admin/categories').then(function(d){
+    if(d.code===0){
+      categoryList=d.data||[];
+      if(categoryList.length===0){
+        renderEmpty('catTbody',6,'暂无分类数据');
+        return;
+      }
+      var h='';
+      categoryList.forEach(function(c){
+        h+='<tr><td>'+c.id+'</td><td>'+html(c.name)+'</td><td>'+html(c.icon)+'</td><td>'+c.sort+'</td><td>'+formatTime(c.created_at)+'</td>';
+        h+='<td><button class="layui-btn layui-btn-xs" onclick="quickEditCategory('+c.id+')">修改</button> <button class="layui-btn layui-btn-xs layui-btn-danger" onclick="deleteCategory('+c.id+')">删除</button></td></tr>';
+      });
+      document.getElementById('catTbody').innerHTML=h;
+    }
+  });
+}
+
+function showCategoryForm(id){
+  var isEdit=!!id;
+  var cat=categoryList.find(function(x){return x.id==id;})||{};
+  var h='<div style="padding:20px"><div class="form-row"><label>分类名称</label><input id="fCatName" class="layui-input"></div><div class="form-row"><label>图标URL</label><input id="fCatIcon" class="layui-input"></div><div class="form-row"><label>排序</label><input type="number" id="fCatSort" class="layui-input"></div></div>';
+  LAYER.open({type:1,title:isEdit?'修改分类':'新增分类',area:'500px',content:h,btn:['保存','取消'],
+    success:function(){
+      document.getElementById('fCatName').value=cat.name||'';
+      document.getElementById('fCatIcon').value=cat.icon||'';
+      document.getElementById('fCatSort').value=cat.sort||0;
+    },
+    yes:function(idx){
+      var data={name:document.getElementById('fCatName').value,icon:document.getElementById('fCatIcon').value,sort:parseInt(document.getElementById('fCatSort').value)||0};
+      if(!data.name){LAYER.msg('请填写分类名称');return;}
+      ajax(isEdit?'/admin/categories/'+id:'/admin/categories',isEdit?'PUT':'POST',data).then(function(d){LAYER.msg(d.msg);if(d.code===0){LAYER.close(idx);loadCategoryManage();loadCategories();}});
+    }
+  });
+}
+function editCategory(id){showCategoryForm(id);}
+function deleteCategory(id){
+  if(!mustConfirm('删除分类不会删除商品，但商品会保留旧分类名，确认删除？')) return;
+  ajax('/admin/categories/'+id,'DELETE').then(function(d){notify(d.msg);loadCategoryManage();loadCategories();});
+}
+function quickAddCategory(){
+  var name=prompt('请输入分类名称');
+  if(!name) return;
+  ajax('/admin/categories','POST',{name:name,sort:99,icon:''}).then(function(d){LAYER.msg(d.msg);loadCategoryManage();loadCategories();});
+}
+
+function quickEditCategory(id){
+  var cat=categoryList.find(function(x){return x.id==id;})||{};
+  var name=prompt('修改分类名称',cat.name||'');
+  if(!name) return;
+  var sort=parseInt(prompt('排序',cat.sort||0))||0;
+  ajax('/admin/categories/'+id,'PUT',{id:id,name:name,sort:sort,icon:cat.icon||''}).then(function(d){LAYER.msg(d.msg);loadCategoryManage();loadCategories();});
 }
 function loadCommodities(p){
   comPage=p||comPage;
@@ -267,13 +472,19 @@ function loadCommodities(p){
   var cid=document.getElementById('comCatFilter').value;
   ajax('/admin/commodities?page='+comPage+'&limit=10&keyword='+encodeURIComponent(kw)+'&category_id='+cid).then(function(d){
     if(d.code===0){
+      commodityList=d.data||[];
+      if(commodityList.length===0){
+        renderEmpty('comTbody',11,'暂无商品数据');
+        document.getElementById('comPage').innerHTML='';
+        return;
+      }
       var h='';
-      d.data.forEach(function(c){
+      commodityList.forEach(function(c){
         h+='<tr>';
         h+='<td>'+c.id+'</td>';
-        h+='<td><img src="'+c.image+'" style="width:50px;height:50px;border-radius:6px;object-fit:cover" onerror="this.src=\'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 50 50%22><rect fill=%22%23eee%22 width=%2250%22 height=%2250%22/><text x=%2225%22 y=%2230%22 text-anchor=%22middle%22 fill=%22%23999%22 font-size=%2212%22>无图</text></svg>\'"></td>';
-        h+='<td>'+c.name+'</td>';
-        h+='<td>'+c.category_name+'</td>';
+        h+='<td><img src="'+html(c.image)+'" style="width:50px;height:50px;border-radius:6px;object-fit:cover" onerror="this.src=\'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 50 50%22><rect fill=%22%23eee%22 width=%2250%22 height=%2250%22/><text x=%2225%22 y=%2230%22 text-anchor=%22middle%22 fill=%22%23999%22 font-size=%2212%22>无图</text></svg>\'"></td>';
+        h+='<td>'+html(c.name)+'</td>';
+        h+='<td>'+html(c.category_name)+'</td>';
         h+='<td>¥'+c.price+'</td>';
         h+='<td>¥'+c.group_price+'</td>';
         h+='<td>'+c.stock+'</td>';
@@ -281,13 +492,13 @@ function loadCommodities(p){
         h+='<td>'+(c.status==1?'<span class="status-tag status-1">上架</span>':'<span class="status-tag status-0">下架</span>')+'</td>';
         h+='<td>'+(c.is_groupon==1?'<span class="status-tag status-2">团购</span>':'普通')+'</td>';
         h+='<td>';
-        h+='<button class="layui-btn layui-btn-xs" onclick="editCommodity('+c.id+')">修改</button> ';
+        h+='<button class="layui-btn layui-btn-xs" onclick="quickEditCommodity('+c.id+')">修改</button> ';
         h+='<button class="layui-btn layui-btn-xs layui-btn-normal" onclick="toggleCommodity('+c.id+')">'+(c.status==1?'下架':'上架')+'</button> ';
         h+='<button class="layui-btn layui-btn-xs layui-btn-danger" onclick="deleteCommodity('+c.id+')">删除</button>';
         h+='</td></tr>';
       });
       document.getElementById('comTbody').innerHTML=h;
-      document.getElementById('comPage').innerHTML='<button onclick="loadCommodities('+(comPage-1)+')" '+(comPage<=1?'disabled':'')+'>上一页</button> 第'+comPage+'页 / 共'+Math.ceil(d.count/10)+'页 <button onclick="loadCommodities('+(comPage+1)+')" '+(comPage>=Math.ceil(d.count/10)?'disabled':'')+'>下一页</button>';
+      pager('comPage',comPage,d.count,'loadCommodities');
     }
   });
 }
@@ -330,7 +541,8 @@ function showComForm(id){
   ajax('/admin/categories').then(function(d){
     if(d.code===0){
       var h=''; d.data.forEach(function(c){h+='<option value="'+c.id+'">'+c.name+'</option>';});
-      document.getElementById('fComCat').innerHTML=h;
+      var catEl=document.getElementById('fComCat');
+      if(catEl) catEl.innerHTML=h;
     }
   });
   // 如果是编辑，填入现有资料
@@ -353,9 +565,56 @@ function showComForm(id){
   }
 }
 
-function editCommodity(id){showComForm(id);}
-function toggleCommodity(id){ajax('/admin/commodities/'+id+'/toggle','PUT').then(function(d){LAYER.msg(d.msg);loadCommodities();});}
-function deleteCommodity(id){LAYER.confirm('确认删除？',function(idx){ajax('/admin/commodities/'+id,'DELETE').then(function(d){LAYER.msg(d.msg);LAYER.close(idx);loadCommodities();});});}
+function editCommodity(id){quickEditCommodity(id);}
+function toggleCommodity(id){
+  ajax('/admin/commodities/'+id+'/toggle','PUT').then(function(d){notify(d.msg);loadCommodities();loadDashboard();});
+}
+function deleteCommodity(id){
+  if(!mustConfirm('确认删除该商品？')) return;
+  ajax('/admin/commodities/'+id,'DELETE').then(function(d){notify(d.msg);loadCommodities();loadDashboard();});
+}
+
+function quickAddCommodity(){
+  var name=prompt('商品名称');
+  if(!name) return;
+  var price=parseFloat(prompt('价格','9.9'))||0;
+  var stock=parseInt(prompt('库存','100'))||0;
+  var cat=categoryList[0]||{};
+  var img=prompt('图片URL，可直接回车使用默认图','https://picsum.photos/seed/'+Date.now()+'/400/400')||'https://picsum.photos/seed/'+Date.now()+'/400/400';
+  ajax('/admin/commodities','POST',{name:name,category_id:cat.id||0,price:price,group_price:0,stock:stock,image:img,description:'后台新增商品',status:1,is_groupon:0}).then(function(d){LAYER.msg(d.msg);loadCommodities();loadDashboard();});
+}
+
+function quickEditCommodity(id){
+  var c=commodityList.find(function(x){return x.id==id;});
+  if(!c){
+    notify('请先刷新商品列表');
+    return;
+  }
+  var name=prompt('商品名称',c.name||'');
+  if(!name) return;
+  var price=parseFloat(prompt('价格',c.price||0));
+  if(isNaN(price)) return;
+  var groupPrice=parseFloat(prompt('团购价',c.group_price||0));
+  if(isNaN(groupPrice)) groupPrice=0;
+  var stock=parseInt(prompt('库存',c.stock||0));
+  if(isNaN(stock)) stock=0;
+  var image=prompt('图片URL',c.image||'')||'';
+  var desc=prompt('商品描述',c.description||'')||'';
+  var isGroupon=confirm('是否设置为团购商品？确定=团购，取消=普通')?1:0;
+  ajax('/admin/commodities/'+id,'PUT',{
+    id:id,
+    name:name,
+    category_id:c.category_id||0,
+    price:price,
+    group_price:groupPrice,
+    stock:stock,
+    sales:c.sales||0,
+    image:image,
+    description:desc,
+    status:c.status,
+    is_groupon:isGroupon
+  }).then(function(d){notify(d.msg);loadCommodities();loadDashboard();});
+}
 
 // ═══ 订单管理 ═══
 var ordPage=1;
@@ -365,19 +624,27 @@ function loadOrders(p){
   var st=document.getElementById('ordStatus').value;
   ajax('/admin/orders?page='+ordPage+'&limit=10&keyword='+encodeURIComponent(kw)+'&status='+st).then(function(d){
     if(d.code===0){
+      orderList=d.data||[];
+      if(orderList.length===0){
+        renderEmpty('ordTbody',9,'暂无订单数据');
+        document.getElementById('ordPage').innerHTML='';
+        return;
+      }
       var h='';
-      d.data.forEach(function(o){
+      orderList.forEach(function(o){
         h+='<tr>';
-        h+='<td>'+o.id+'</td><td>'+o.order_no+'</td><td>'+o.user_name+'</td><td>¥'+o.total_amount+'</td>';
-        h+='<td>'+statusTag(o.status)+'</td><td>'+o.store_name+'</td><td>'+o.pickup_code+'</td>';
-        h+='<td>'+o.created_at+'</td>';
+        h+='<td>'+o.id+'</td><td>'+html(o.order_no)+'</td><td>'+html(o.user_name)+'</td><td>¥'+o.total_amount+'</td>';
+        h+='<td>'+statusTag(o.status)+'</td><td>'+html(o.store_name)+'</td><td>'+html(o.pickup_code)+'</td>';
+        h+='<td>'+formatTime(o.created_at)+'</td>';
         h+='<td>';
         h+='<button class="layui-btn layui-btn-xs" onclick="viewOrder('+o.id+')">详情</button> ';
         if(o.status==1) h+='<button class="layui-btn layui-btn-xs layui-btn-normal" onclick="setPickup('+o.id+')">设为待取货</button>';
+        if(o.status==2) h+='<button class="layui-btn layui-btn-xs layui-btn-normal" onclick="updateOrderStatus('+o.id+',3)">确认取货</button>';
+        if(o.status==0||o.status==1||o.status==2) h+='<button class="layui-btn layui-btn-xs layui-btn-danger" onclick="updateOrderStatus('+o.id+',4)">取消</button>';
         h+='</td></tr>';
       });
       document.getElementById('ordTbody').innerHTML=h;
-      document.getElementById('ordPage').innerHTML='<button onclick="loadOrders('+(ordPage-1)+')" '+(ordPage<=1?'disabled':'')+'>上一页</button> 第'+ordPage+'页 / 共'+Math.ceil(d.count/10)+'页 <button onclick="loadOrders('+(ordPage+1)+')" '+(ordPage>=Math.ceil(d.count/10)?'disabled':'')+'>下一页</button>';
+      pager('ordPage',ordPage,d.count,'loadOrders');
     }
   });
 }
@@ -386,30 +653,41 @@ function viewOrder(id){
   ajax('/admin/orders/'+id).then(function(d){
     if(d.code===0){
       var o=d.data.order, items=d.data.items;
-      var h='<div style="padding:16px"><p><b>订单编号:</b> '+o.order_no+'</p><p><b>用户:</b> '+o.user_name+'</p><p><b>金额:</b> ¥'+o.total_amount+'</p><p><b>状态:</b> '+statusTag(o.status)+'</p><p><b>取货码:</b> '+o.pickup_code+'</p><hr><h5>订单项:</h5>';
-      items.forEach(function(i){h+='<p>'+i.commodity_name+' x'+i.quantity+' ¥'+i.price+'</p>';});
-      h+='</div>';
-      LAYER.open({type:1,title:'订单详情',area:'500px',content:h});
+      var lines=[
+        '订单编号：'+(o.order_no||''),
+        '用户：'+(o.user_name||''),
+        '金额：￥'+(o.total_amount||0),
+        '状态：'+({0:'待付款',1:'已付款',2:'待取货',3:'已取货',4:'已取消'}[o.status]||'未知'),
+        '自提门店：'+(o.store_name||''),
+        '取货码：'+(o.pickup_code||''),
+        '备注：'+(o.remark||''),
+        '',
+        '订单项：'
+      ];
+      (items||[]).forEach(function(i){lines.push((i.commodity_name||'')+' x'+i.quantity+' ￥'+i.price);});
+      showTextDialog('订单详情',lines.join('\n'));
     }
   });
 }
 
 function setPickup(id){
-  // 载入门店列表让管理员选择
   ajax('/admin/stores?page=1&limit=100').then(function(d){
     if(d.code===0){
-      var h='<div style="padding:20px"><p>选择自提门店：</p><select id="pickStore" style="width:100%;height:40px">';
-      d.data.forEach(function(s){h+='<option value="'+s.id+'">'+s.name+'</option>';});
-      h+='</select></div>';
-      LAYER.open({type:1,title:'设为待取货',area:'400px',content:h,btn:['确定','取消'],
-        yes:function(idx){
-          var sid=parseInt(document.getElementById('pickStore').value)||0;
-          ajax('/admin/orders/'+id+'/status','PUT',{status:2,store_id:sid}).then(function(d2){
-            LAYER.msg(d2.msg);LAYER.close(idx);loadOrders();
-          });
-        }
+      var list=(d.data||[]).map(function(s){return s.id+'：'+s.name;}).join('\n');
+      var sid=parseInt(prompt('请输入自提门店ID：\n'+list,(d.data&&d.data[0]?d.data[0].id:'')))||0;
+      if(!sid) return;
+      ajax('/admin/orders/'+id+'/status','PUT',{status:2,store_id:sid}).then(function(d2){
+        notify(d2.msg);loadOrders();loadDashboard();
       });
     }
+  });
+}
+
+function updateOrderStatus(id,status){
+  var text={3:'确认该订单已取货？',4:'确认取消该订单？'}[status]||'确认更新订单状态？';
+  if(!mustConfirm(text)) return;
+  ajax('/admin/orders/'+id+'/status','PUT',{status:status}).then(function(d){
+    notify(d.msg);loadOrders();loadDashboard();
   });
 }
 
@@ -420,31 +698,93 @@ function loadUsers(p){
   var kw=document.getElementById('userKeyword').value;
   ajax('/admin/users?page='+userPage+'&limit=10&keyword='+encodeURIComponent(kw)).then(function(d){
     if(d.code===0){
+      if(!d.data || d.data.length===0){
+        renderEmpty('userTbody',7,'暂无用户数据');
+        document.getElementById('userPage').innerHTML='';
+        return;
+      }
       var h='';
       d.data.forEach(function(u){
-        h+='<tr><td>'+u.id+'</td><td>'+u.nickname+'</td><td>'+u.phone+'</td><td>'+u.openid+'</td>';
+        h+='<tr><td>'+u.id+'</td><td>'+html(u.nickname)+'</td><td>'+html(u.phone)+'</td><td>'+html(u.openid)+'</td>';
         h+='<td>'+(u.status==1?'<span class="status-tag status-1">正常</span>':'<span class="status-tag status-0">禁用</span>')+'</td>';
         h+='<td>'+u.created_at+'</td>';
         h+='<td><button class="layui-btn layui-btn-xs layui-btn-normal" onclick="toggleUser('+u.id+')">'+(u.status==1?'禁用':'启用')+'</button> ';
         h+='<button class="layui-btn layui-btn-xs layui-btn-danger" onclick="deleteUser('+u.id+')">删除</button></td></tr>';
       });
       document.getElementById('userTbody').innerHTML=h;
-      document.getElementById('userPage').innerHTML='<button onclick="loadUsers('+(userPage-1)+')" '+(userPage<=1?'disabled':'')+'>上一页</button> 第'+userPage+'页 / 共'+Math.ceil(d.count/10)+'页 <button onclick="loadUsers('+(userPage+1)+')" '+(userPage>=Math.ceil(d.count/10)?'disabled':'')+'>下一页</button>';
+      pager('userPage',userPage,d.count,'loadUsers');
     }
   });
 }
-function toggleUser(id){ajax('/admin/users/'+id+'/toggle','PUT').then(function(d){LAYER.msg(d.msg);loadUsers();});}
-function deleteUser(id){LAYER.confirm('确认删除该用户？',function(idx){ajax('/admin/users/'+id,'DELETE').then(function(d){LAYER.msg(d.msg);LAYER.close(idx);loadUsers();});});}
+function toggleUser(id){
+  ajax('/admin/users/'+id+'/toggle','PUT').then(function(d){notify(d.msg);loadUsers();});
+}
+function deleteUser(id){
+  if(!mustConfirm('确认删除该用户？')) return;
+  ajax('/admin/users/'+id,'DELETE').then(function(d){notify(d.msg);loadUsers();loadDashboard();});
+}
+
+// ═══ 管理员管理 ═══
+function loadAdmins(){
+  ajax('/admin/admins?page=1&limit=100').then(function(d){
+    if(d.code===0){
+      adminList=d.data||[];
+      if(adminList.length===0){renderEmpty('adminTbody',6,'暂无管理员数据');return;}
+      var h='';
+      adminList.forEach(function(a){
+        h+='<tr><td>'+a.id+'</td><td>'+html(a.username)+'</td><td>'+html(a.role_name)+'</td><td>'+(a.status==1?'<span class="status-tag status-1">启用</span>':'<span class="status-tag status-0">停用</span>')+'</td><td>'+formatTime(a.created_at)+'</td>';
+        h+='<td><button class="layui-btn layui-btn-xs" onclick="showAdminForm('+a.id+')">修改</button> <button class="layui-btn layui-btn-xs layui-btn-danger" onclick="deleteAdmin('+a.id+')">删除</button></td></tr>';
+      });
+      document.getElementById('adminTbody').innerHTML=h;
+    }
+  });
+}
+
+function showAdminForm(id){
+  var isEdit=!!id;
+  var admin=adminList.find(function(x){return x.id==id;})||{};
+  var h='<div style="padding:20px"><div class="form-row"><label>账号</label><input id="fAUser" class="layui-input" '+(isEdit?'disabled':'')+'></div><div class="form-row"><label>密码</label><input type="password" id="fAPass" class="layui-input" placeholder="'+(isEdit?'不改请留空':'请输入密码')+'"></div><div class="form-row"><label>角色名</label><input id="fARole" class="layui-input"></div><div class="form-row"><label>状态</label><select id="fAStatus"><option value="1">启用</option><option value="0">停用</option></select></div></div>';
+  LAYER.open({type:1,title:isEdit?'修改管理员':'新增管理员',area:'500px',content:h,btn:['保存','取消'],
+    success:function(){
+      document.getElementById('fAUser').value=admin.username||'';
+      document.getElementById('fARole').value=admin.role_name||'业务管理员';
+      document.getElementById('fAStatus').value=admin.status==0?0:1;
+    },
+    yes:function(idx){
+      var data={username:document.getElementById('fAUser').value,password:document.getElementById('fAPass').value,role_name:document.getElementById('fARole').value,status:parseInt(document.getElementById('fAStatus').value)};
+      if(!isEdit && (!data.username||!data.password)){LAYER.msg('请填写账号和密码');return;}
+      ajax(isEdit?'/admin/admins/'+id:'/admin/admins',isEdit?'PUT':'POST',data).then(function(d){LAYER.msg(d.msg);if(d.code===0){LAYER.close(idx);loadAdmins();}});
+    }
+  });
+}
+function deleteAdmin(id){
+  if(!mustConfirm('确认删除该管理员？')) return;
+  ajax('/admin/admins/'+id,'DELETE').then(function(d){notify(d.msg);loadAdmins();});
+}
+
+function quickAddAdmin(){
+  var username=prompt('管理员账号');
+  if(!username) return;
+  var password=prompt('管理员密码','123456');
+  if(!password) return;
+  var role=prompt('角色名','业务管理员')||'业务管理员';
+  ajax('/admin/admins','POST',{username:username,password:password,role_name:role,status:1}).then(function(d){LAYER.msg(d.msg);loadAdmins();});
+}
 
 // ═══ 门店管理 ═══
 function loadStores(){
   ajax('/admin/stores?page=1&limit=100').then(function(d){
     if(d.code===0){
+      storeList=d.data||[];
+      if(storeList.length===0){
+        renderEmpty('storeTbody',7,'暂无门店数据');
+        return;
+      }
       var h='';
-      d.data.forEach(function(s){
-        h+='<tr><td>'+s.id+'</td><td>'+s.name+'</td><td>'+s.address+'</td><td>'+s.phone+'</td><td>'+s.leader_id+'</td>';
+      storeList.forEach(function(s){
+        h+='<tr><td>'+s.id+'</td><td>'+html(s.name)+'</td><td>'+html(s.address)+'</td><td>'+html(s.phone)+'</td><td>'+s.leader_id+'</td>';
         h+='<td>'+(s.status==1?'<span class="status-tag status-1">营业</span>':'<span class="status-tag status-0">休息</span>')+'</td>';
-        h+='<td><button class="layui-btn layui-btn-xs" onclick="editStore('+s.id+')">修改</button> <button class="layui-btn layui-btn-xs layui-btn-danger" onclick="deleteStore('+s.id+')">删除</button></td></tr>';
+        h+='<td><button class="layui-btn layui-btn-xs" onclick="quickEditStore('+s.id+')">修改</button> <button class="layui-btn layui-btn-xs layui-btn-normal" onclick="toggleStore('+s.id+')">'+(s.status==1?'设为休息':'设为营业')+'</button> <button class="layui-btn layui-btn-xs layui-btn-danger" onclick="deleteStore('+s.id+')">删除</button></td></tr>';
       });
       document.getElementById('storeTbody').innerHTML=h;
     }
@@ -452,32 +792,79 @@ function loadStores(){
 }
 function showStoreForm(id){
   var isEdit=!!id;
-  var h='<div style="padding:20px"><div class="form-row"><label>名称</label><input id="fSName" class="layui-input"></div><div class="form-row"><label>地址</label><input id="fSAddr" class="layui-input"></div><div class="form-row"><label>电话</label><input id="fSPhone" class="layui-input"></div><div class="form-row"><label>团长ID</label><input type="number" id="fSLeader" class="layui-input"></div></div>';
+  var store=storeList.find(function(x){return x.id==id;})||{};
+  var h='<div style="padding:20px"><div class="form-row"><label>名称</label><input id="fSName" class="layui-input"></div><div class="form-row"><label>地址</label><input id="fSAddr" class="layui-input"></div><div class="form-row"><label>电话</label><input id="fSPhone" class="layui-input"></div><div class="form-row"><label>团长ID</label><input type="number" id="fSLeader" class="layui-input"></div><div class="form-row"><label>状态</label><select id="fSStatus"><option value="1">营业</option><option value="0">休息</option></select></div></div>';
   LAYER.open({type:1,title:isEdit?'修改门店':'新增门店',area:'500px',content:h,btn:['保存','取消'],
+    success:function(){
+      document.getElementById('fSName').value=store.name||'';
+      document.getElementById('fSAddr').value=store.address||'';
+      document.getElementById('fSPhone').value=store.phone||'';
+      document.getElementById('fSLeader').value=store.leader_id||0;
+      document.getElementById('fSStatus').value=store.status==0?0:1;
+    },
     yes:function(idx){
-      var data={name:document.getElementById('fSName').value,address:document.getElementById('fSAddr').value,phone:document.getElementById('fSPhone').value,leader_id:parseInt(document.getElementById('fSLeader').value)||0,status:1};
+      var data={name:document.getElementById('fSName').value,address:document.getElementById('fSAddr').value,phone:document.getElementById('fSPhone').value,leader_id:parseInt(document.getElementById('fSLeader').value)||0,status:parseInt(document.getElementById('fSStatus').value)};
       var url=isEdit?'/admin/stores/'+id:'/admin/stores';
       ajax(url,isEdit?'PUT':'POST',data).then(function(d){LAYER.msg(d.msg);if(d.code===0){LAYER.close(idx);loadStores();}});
     }
   });
 }
 function editStore(id){showStoreForm(id);}
-function deleteStore(id){LAYER.confirm('确认删除？',function(idx){ajax('/admin/stores/'+id,'DELETE').then(function(d){LAYER.msg(d.msg);LAYER.close(idx);loadStores();});});}
+function deleteStore(id){
+  if(!mustConfirm('确认删除该门店？')) return;
+  ajax('/admin/stores/'+id,'DELETE').then(function(d){notify(d.msg);loadStores();});
+}
+
+function toggleStore(id){
+  var s=storeList.find(function(x){return x.id==id;});
+  if(!s) return;
+  var next=s.status==1?0:1;
+  ajax('/admin/stores/'+id,'PUT',{id:id,name:s.name,address:s.address,phone:s.phone,leader_id:s.leader_id||0,leader_name:s.leader_name||'',status:next}).then(function(d){notify(d.msg);loadStores();});
+}
+
+function quickAddStore(){
+  var name=prompt('门店名称');
+  if(!name) return;
+  var address=prompt('门店地址','小区门口自提点')||'';
+  var phone=prompt('联系电话','13800000000')||'';
+  ajax('/admin/stores','POST',{name:name,address:address,phone:phone,leader_id:0,status:1}).then(function(d){LAYER.msg(d.msg);loadStores();});
+}
+
+function quickEditStore(id){
+  var s=storeList.find(function(x){return x.id==id;})||{};
+  var name=prompt('门店名称',s.name||'');
+  if(!name) return;
+  var address=prompt('门店地址',s.address||'')||'';
+  var phone=prompt('联系电话',s.phone||'')||'';
+  var status=confirm('是否营业？确定=营业，取消=休息')?1:0;
+  ajax('/admin/stores/'+id,'PUT',{id:id,name:name,address:address,phone:phone,leader_id:s.leader_id||0,leader_name:s.leader_name||'',status:status}).then(function(d){LAYER.msg(d.msg);loadStores();});
+}
 
 // ═══ 角色管理 ═══
 function loadRoles(){
   ajax('/admin/roles').then(function(d){
     if(d.code===0){
+      roleList=d.data||[];
+      if(roleList.length===0){
+        renderEmpty('roleTbody',5,'暂无角色数据');
+        return;
+      }
       var h='';
-      d.data.forEach(function(r){h+='<tr><td>'+r.id+'</td><td>'+r.name+'</td><td>'+r.desc+'</td><td>'+r.menus+'</td><td><button class="layui-btn layui-btn-xs" onclick="editRole('+r.id+')">修改</button> <button class="layui-btn layui-btn-xs layui-btn-danger" onclick="deleteRole('+r.id+')">删除</button></td></tr>';});
+      roleList.forEach(function(r){h+='<tr><td>'+r.id+'</td><td>'+html(r.name)+'</td><td>'+html(r.desc)+'</td><td>'+html(r.menus)+'</td><td><button class="layui-btn layui-btn-xs" onclick="quickEditRole('+r.id+')">修改</button> <button class="layui-btn layui-btn-xs layui-btn-danger" onclick="deleteRole('+r.id+')">删除</button></td></tr>';});
       document.getElementById('roleTbody').innerHTML=h;
     }
   });
 }
 function showRoleForm(id){
   var isEdit=!!id;
+  var role=roleList.find(function(x){return x.id==id;})||{};
   var h='<div style="padding:20px"><div class="form-row"><label>角色名</label><input id="fRName" class="layui-input"></div><div class="form-row"><label>描述</label><input id="fRDesc" class="layui-input"></div><div class="form-row"><label>菜单(逗号分隔ID)</label><input id="fRMenus" class="layui-input"></div></div>';
   LAYER.open({type:1,title:isEdit?'修改角色':'新增角色',area:'500px',content:h,btn:['保存','取消'],
+    success:function(){
+      document.getElementById('fRName').value=role.name||'';
+      document.getElementById('fRDesc').value=role.desc||'';
+      document.getElementById('fRMenus').value=role.menus||'';
+    },
     yes:function(idx){
       var data={name:document.getElementById('fRName').value,desc:document.getElementById('fRDesc').value,menus:document.getElementById('fRMenus').value};
       var url=isEdit?'/admin/roles/'+id:'/admin/roles';
@@ -486,55 +873,186 @@ function showRoleForm(id){
   });
 }
 function editRole(id){showRoleForm(id);}
-function deleteRole(id){LAYER.confirm('确认删除？',function(idx){ajax('/admin/roles/'+id,'DELETE').then(function(d){LAYER.msg(d.msg);LAYER.close(idx);loadRoles();});});}
+function deleteRole(id){
+  if(!mustConfirm('确认删除该角色？')) return;
+  ajax('/admin/roles/'+id,'DELETE').then(function(d){notify(d.msg);loadRoles();});
+}
+
+function quickAddRole(){
+  var name=prompt('角色名称');
+  if(!name) return;
+  var desc=prompt('角色描述','用于答辩演示的角色')||'';
+  var menus=prompt('权限菜单ID，逗号分隔','1,2,3')||'';
+  ajax('/admin/roles','POST',{name:name,desc:desc,menus:menus}).then(function(d){LAYER.msg(d.msg);loadRoles();});
+}
+
+function quickEditRole(id){
+  var r=roleList.find(function(x){return x.id==id;})||{};
+  var name=prompt('角色名称',r.name||'');
+  if(!name) return;
+  var desc=prompt('角色描述',r.desc||'')||'';
+  var menus=prompt('权限菜单ID，逗号分隔',r.menus||'')||'';
+  ajax('/admin/roles/'+id,'PUT',{id:id,name:name,desc:desc,menus:menus}).then(function(d){LAYER.msg(d.msg);loadRoles();});
+}
 
 // ═══ 广告管理 ═══
 function loadAds(){
   ajax('/admin/ads/all?page=1&limit=100').then(function(d){
     if(d.code===0){
+      adsList=d.data||[];
+      if(adsList.length===0){
+        renderEmpty('adsTbody',7,'暂无广告数据');
+        return;
+      }
       var h='';
-      d.data.forEach(function(a){h+='<tr><td>'+a.id+'</td><td>'+a.title+'</td><td>'+a.image+'</td><td>'+a.link+'</td><td>'+a.sort+'</td><td>'+(a.status==1?'<span class="status-tag status-1">显示</span>':'<span class="status-tag status-0">隐藏</span>')+'</td><td><button class="layui-btn layui-btn-xs" onclick="editAds('+a.id+')">修改</button> <button class="layui-btn layui-btn-xs layui-btn-danger" onclick="deleteAds('+a.id+')">删除</button></td></tr>';});
+      adsList.forEach(function(a){h+='<tr><td>'+a.id+'</td><td>'+html(a.title)+'</td><td>'+html(a.image)+'</td><td>'+html(a.link)+'</td><td>'+a.sort+'</td><td>'+(a.status==1?'<span class="status-tag status-1">显示</span>':'<span class="status-tag status-0">隐藏</span>')+'</td><td><button class="layui-btn layui-btn-xs" onclick="quickEditAds('+a.id+')">修改</button> <button class="layui-btn layui-btn-xs layui-btn-normal" onclick="toggleAds('+a.id+')">'+(a.status==1?'隐藏':'显示')+'</button> <button class="layui-btn layui-btn-xs layui-btn-danger" onclick="deleteAds('+a.id+')">删除</button></td></tr>';});
       document.getElementById('adsTbody').innerHTML=h;
     }
   });
 }
 function showAdsForm(id){
   var isEdit=!!id;
-  var h='<div style="padding:20px"><div class="form-row"><label>标题</label><input id="fATitle" class="layui-input"></div><div class="form-row"><label>图片URL</label><input id="fAImg" class="layui-input"></div><div class="form-row"><label>链接</label><input id="fALink" class="layui-input"></div><div class="form-row"><label>排序</label><input type="number" id="fASort" class="layui-input"></div></div>';
+  var ads=adsList.find(function(x){return x.id==id;})||{};
+  var h='<div style="padding:20px"><div class="form-row"><label>标题</label><input id="fATitle" class="layui-input"></div><div class="form-row"><label>图片URL</label><input id="fAImg" class="layui-input"></div><div class="form-row"><label>链接</label><input id="fALink" class="layui-input"></div><div class="form-row"><label>排序</label><input type="number" id="fASort" class="layui-input"></div><div class="form-row"><label>状态</label><select id="fAVisible"><option value="1">显示</option><option value="0">隐藏</option></select></div></div>';
   LAYER.open({type:1,title:isEdit?'修改广告':'新增广告',area:'500px',content:h,btn:['保存','取消'],
+    success:function(){
+      document.getElementById('fATitle').value=ads.title||'';
+      document.getElementById('fAImg').value=ads.image||'';
+      document.getElementById('fALink').value=ads.link||'';
+      document.getElementById('fASort').value=ads.sort||0;
+      document.getElementById('fAVisible').value=ads.status==0?0:1;
+    },
     yes:function(idx){
-      var data={title:document.getElementById('fATitle').value,image:document.getElementById('fAImg').value,link:document.getElementById('fALink').value,sort:parseInt(document.getElementById('fASort').value)||0,status:1};
+      var data={title:document.getElementById('fATitle').value,image:document.getElementById('fAImg').value,link:document.getElementById('fALink').value,sort:parseInt(document.getElementById('fASort').value)||0,status:parseInt(document.getElementById('fAVisible').value)};
       var url=isEdit?'/admin/ads/'+id:'/admin/ads';
       ajax(url,isEdit?'PUT':'POST',data).then(function(d){LAYER.msg(d.msg);if(d.code===0){LAYER.close(idx);loadAds();}});
     }
   });
 }
 function editAds(id){showAdsForm(id);}
-function deleteAds(id){LAYER.confirm('确认删除？',function(idx){ajax('/admin/ads/'+id,'DELETE').then(function(d){LAYER.msg(d.msg);LAYER.close(idx);loadAds();});});}
+function deleteAds(id){
+  if(!mustConfirm('确认删除该广告？')) return;
+  ajax('/admin/ads/'+id,'DELETE').then(function(d){notify(d.msg);loadAds();});
+}
+
+function toggleAds(id){
+  var a=adsList.find(function(x){return x.id==id;});
+  if(!a) return;
+  ajax('/admin/ads/'+id,'PUT',{id:id,title:a.title,image:a.image,link:a.link,sort:a.sort||0,status:a.status==1?0:1}).then(function(d){notify(d.msg);loadAds();});
+}
+
+function quickAddAds(){
+  var title=prompt('广告标题');
+  if(!title) return;
+  var image=prompt('图片URL','https://picsum.photos/seed/banner'+Date.now()+'/800/400')||'';
+  var link=prompt('跳转链接','/mock-wx')||'/mock-wx';
+  ajax('/admin/ads','POST',{title:title,image:image,link:link,sort:99,status:1}).then(function(d){LAYER.msg(d.msg);loadAds();});
+}
+
+function quickEditAds(id){
+  var a=adsList.find(function(x){return x.id==id;})||{};
+  var title=prompt('广告标题',a.title||'');
+  if(!title) return;
+  var image=prompt('图片URL',a.image||'')||'';
+  var link=prompt('跳转链接',a.link||'/mock-wx')||'/mock-wx';
+  var status=confirm('是否显示？确定=显示，取消=隐藏')?1:0;
+  ajax('/admin/ads/'+id,'PUT',{id:id,title:title,image:image,link:link,sort:a.sort||0,status:status}).then(function(d){LAYER.msg(d.msg);loadAds();});
+}
 
 // ═══ 公告管理 ═══
 function loadAnnouncements(){
   ajax('/admin/announcements/all?page=1&limit=100').then(function(d){
     if(d.code===0){
+      annList=d.data||[];
+      if(annList.length===0){
+        renderEmpty('annTbody',6,'暂无公告数据');
+        return;
+      }
       var h='';
-      d.data.forEach(function(a){h+='<tr><td>'+a.id+'</td><td>'+a.title+'</td><td>'+a.content+'</td><td>'+(a.status==1?'<span class="status-tag status-1">发布</span>':'<span class="status-tag status-0">隐藏</span>')+'</td><td>'+a.created_at+'</td><td><button class="layui-btn layui-btn-xs" onclick="editAnn('+a.id+')">修改</button> <button class="layui-btn layui-btn-xs layui-btn-danger" onclick="deleteAnn('+a.id+')">删除</button></td></tr>';});
+      annList.forEach(function(a){h+='<tr><td>'+a.id+'</td><td>'+html(a.title)+'</td><td>'+html(a.content)+'</td><td>'+(a.status==1?'<span class="status-tag status-1">发布</span>':'<span class="status-tag status-0">隐藏</span>')+'</td><td>'+formatTime(a.created_at)+'</td><td><button class="layui-btn layui-btn-xs" onclick="quickEditAnn('+a.id+')">修改</button> <button class="layui-btn layui-btn-xs layui-btn-normal" onclick="toggleAnn('+a.id+')">'+(a.status==1?'隐藏':'发布')+'</button> <button class="layui-btn layui-btn-xs layui-btn-danger" onclick="deleteAnn('+a.id+')">删除</button></td></tr>';});
       document.getElementById('annTbody').innerHTML=h;
     }
   });
 }
 function showAnnForm(id){
   var isEdit=!!id;
-  var h='<div style="padding:20px"><div class="form-row"><label>标题</label><input id="fAnnTitle" class="layui-input"></div><div class="form-row"><label>内容</label><textarea id="fAnnContent" class="layui-textarea"></textarea></div></div>';
+  var ann=annList.find(function(x){return x.id==id;})||{};
+  var h='<div style="padding:20px"><div class="form-row"><label>标题</label><input id="fAnnTitle" class="layui-input"></div><div class="form-row"><label>内容</label><textarea id="fAnnContent" class="layui-textarea"></textarea></div><div class="form-row"><label>状态</label><select id="fAnnStatus"><option value="1">发布</option><option value="0">隐藏</option></select></div></div>';
   LAYER.open({type:1,title:isEdit?'修改公告':'发布公告',area:'500px',content:h,btn:['保存','取消'],
+    success:function(){
+      document.getElementById('fAnnTitle').value=ann.title||'';
+      document.getElementById('fAnnContent').value=ann.content||'';
+      document.getElementById('fAnnStatus').value=ann.status==0?0:1;
+    },
     yes:function(idx){
-      var data={title:document.getElementById('fAnnTitle').value,content:document.getElementById('fAnnContent').value,status:1};
+      var data={title:document.getElementById('fAnnTitle').value,content:document.getElementById('fAnnContent').value,status:parseInt(document.getElementById('fAnnStatus').value)};
       var url=isEdit?'/admin/announcements/'+id:'/admin/announcements';
       ajax(url,isEdit?'PUT':'POST',data).then(function(d){LAYER.msg(d.msg);if(d.code===0){LAYER.close(idx);loadAnnouncements();}});
     }
   });
 }
 function editAnn(id){showAnnForm(id);}
-function deleteAnn(id){LAYER.confirm('确认删除？',function(idx){ajax('/admin/announcements/'+id,'DELETE').then(function(d){LAYER.msg(d.msg);LAYER.close(idx);loadAnnouncements();});});}
+function deleteAnn(id){
+  if(!mustConfirm('确认删除该公告？')) return;
+  ajax('/admin/announcements/'+id,'DELETE').then(function(d){notify(d.msg);loadAnnouncements();});
+}
+
+function toggleAnn(id){
+  var a=annList.find(function(x){return x.id==id;});
+  if(!a) return;
+  ajax('/admin/announcements/'+id,'PUT',{id:id,title:a.title,content:a.content,status:a.status==1?0:1}).then(function(d){notify(d.msg);loadAnnouncements();});
+}
+
+function quickAddAnn(){
+  var title=prompt('公告标题');
+  if(!title) return;
+  var content=prompt('公告内容','今日下单，次日自提')||'';
+  ajax('/admin/announcements','POST',{title:title,content:content,status:1}).then(function(d){LAYER.msg(d.msg);loadAnnouncements();});
+}
+
+function quickEditAnn(id){
+  var a=annList.find(function(x){return x.id==id;})||{};
+  var title=prompt('公告标题',a.title||'');
+  if(!title) return;
+  var content=prompt('公告内容',a.content||'')||'';
+  var status=confirm('是否发布？确定=发布，取消=隐藏')?1:0;
+  ajax('/admin/announcements/'+id,'PUT',{id:id,title:title,content:content,status:status}).then(function(d){LAYER.msg(d.msg);loadAnnouncements();});
+}
+
+// ═══ 消息群发 ═══
+function loadMessageUsers(){
+  ajax('/admin/users?page=1&limit=100').then(function(d){
+    if(d.code===0){
+      userList=d.data||[];
+      var h='<option value="0">全部用户</option>';
+      userList.forEach(function(u){h+='<option value="'+u.id+'">'+html(u.nickname||('用户'+u.id))+' - '+html(u.phone||u.openid||'')+'</option>';});
+      document.getElementById('msgUserID').innerHTML=h;
+    }
+  });
+}
+function sendMessage(){
+  var data={
+    user_id:parseInt(document.getElementById('msgUserID').value)||0,
+    type:parseInt(document.getElementById('msgType').value)||0,
+    title:document.getElementById('msgTitle').value,
+    content:document.getElementById('msgContent').value
+  };
+  if(!data.title||!data.content){LAYER.msg('请填写标题和内容');return;}
+  ajax('/admin/messages','POST',data).then(function(d){
+    LAYER.msg(d.msg);
+    if(d.code===0){
+      document.getElementById('msgTitle').value='';
+      document.getElementById('msgContent').value='';
+    }
+  });
+}
+
+function quickSendMessage(){
+  var title=prompt('消息标题','团购通知');
+  if(!title) return;
+  var content=prompt('消息内容','今晚 8 点团购开抢，数量有限，先到先得。')||'';
+  ajax('/admin/messages','POST',{user_id:0,type:0,title:title,content:content}).then(function(d){LAYER.msg(d.msg);});
+}
 
 // ─── 初始化 ───
 loadDashboard();

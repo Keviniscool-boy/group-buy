@@ -1,0 +1,40 @@
+page {
+  background: #f7f7f7;
+  color: #30343b;
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
+}
+.page {
+  min-height: 100vh;
+  padding-bottom: 24rpx;
+}
+.card {
+  margin: 20rpx 24rpx;
+  padding: 24rpx;
+  border-radius: 18rpx;
+  background: #fff;
+  box-shadow: 0 8rpx 24rpx rgba(30, 32, 37, .06);
+}
+.primary {
+  background: #ff6b35;
+  color: #fff;
+}
+.muted {
+  color: #8a8f98;
+}
+.price {
+  color: #f23d3d;
+  font-weight: 700;
+}
+.tag {
+  display: inline-block;
+  padding: 4rpx 12rpx;
+  border-radius: 999rpx;
+  color: #ff6b35;
+  background: #fff1eb;
+  font-size: 22rpx;
+}
+.empty {
+  padding: 80rpx 0;
+  text-align: center;
+  color: #999;
+}

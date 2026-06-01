@@ -29,14 +29,17 @@ func AdminLogin(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
-		// 验证码校验（简易实作）
-		if v, ok := captchaStore.Load(req.Username + "_captcha"); ok {
-			if v.(string) != req.Captcha {
-				c.JSON(http.StatusOK, models.Result{Code: 400, Msg: "验证码错误"})
-				return
-			}
-			captchaStore.Delete(req.Username + "_captcha")
+		// 验证码校验（演示环境直接回传验证码，但登录必须填写）
+		v, ok := captchaStore.Load(req.Username + "_captcha")
+		if !ok {
+			c.JSON(http.StatusOK, models.Result{Code: 400, Msg: "请先获取验证码"})
+			return
 		}
+		if v.(string) != req.Captcha {
+			c.JSON(http.StatusOK, models.Result{Code: 400, Msg: "验证码错误"})
+			return
+		}
+		captchaStore.Delete(req.Username + "_captcha")
 
 		var admin models.Admin
 		if err := db.Where("username = ?", req.Username).First(&admin).Error; err != nil {
@@ -72,6 +75,12 @@ func AdminLogin(db *gorm.DB) gin.HandlerFunc {
 // AdminRegister POST /admin/register
 func AdminRegister(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		var adminCount int64
+		db.Model(&models.Admin{}).Count(&adminCount)
+		if adminCount > 0 {
+			c.JSON(http.StatusOK, models.Result{Code: 403, Msg: "请登录后台后新增管理员"})
+			return
+		}
 		var req struct {
 			Username string `json:"username" binding:"required"`
 			Password string `json:"password" binding:"required"`

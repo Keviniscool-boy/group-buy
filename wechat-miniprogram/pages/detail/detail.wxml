@@ -1,0 +1,16 @@
+<view class="page" wx:if="{{goods}}">
+  <image class="cover" src="{{goods.image}}" mode="aspectFill"></image>
+  <view class="card">
+    <view class="name">{{goods.name}}</view>
+    <view class="price-line">
+      <text class="price">￥{{goods.price}}</text>
+      <text class="tag" wx:if="{{goods.is_groupon==1}}">团购 ￥{{goods.group_price}}</text>
+    </view>
+    <view class="muted">库存 {{goods.stock}} · 已售 {{goods.sales}}</view>
+    <view class="desc">{{goods.description}}</view>
+  </view>
+  <view class="footer">
+    <button bindtap="addCart">加入购物车</button>
+    <button class="primary" bindtap="buyNow">立即购买</button>
+  </view>
+</view>

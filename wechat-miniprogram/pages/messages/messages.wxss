@@ -1,0 +1,3 @@
+.msg.unread { border-left: 8rpx solid #ff6b35; }
+.title { font-weight: 800; margin-bottom: 10rpx; }
+.content { color: #555; margin-bottom: 12rpx; }
