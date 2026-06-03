@@ -21,9 +21,10 @@ func WxCreateOrder(db *gorm.DB) gin.HandlerFunc {
 		userID := c.GetUint("userID")
 
 		var req struct {
-			Items   []models.CartItem `json:"items"`
-			StoreID uint              `json:"store_id"`
-			Remark  string            `json:"remark"`
+			Items    []models.CartItem `json:"items"`
+			StoreID  uint              `json:"store_id"`
+			Remark   string            `json:"remark"`
+			CouponID uint              `json:"coupon_id"`
 		}
 		if err := c.ShouldBindJSON(&req); err != nil || len(req.Items) == 0 {
 			c.JSON(http.StatusOK, models.Result{Code: 400, Msg: "参数错误或购物车为空"})
@@ -67,6 +68,27 @@ func WxCreateOrder(db *gorm.DB) gin.HandlerFunc {
 			total += price * float64(qty)
 		}
 
+		var selectedCoupon models.UserCoupon
+		discount := 0.0
+		payAmount := total
+		if req.CouponID > 0 {
+			if db.Where("id = ? AND user_id = ? AND status = 0", req.CouponID, userID).First(&selectedCoupon).Error != nil {
+				c.JSON(http.StatusOK, models.Result{Code: 400, Msg: "优惠券不可用"})
+				return
+			}
+			var coupon models.Coupon
+			if db.First(&coupon, selectedCoupon.CouponID).Error != nil || !couponInDate(coupon, time.Now()) {
+				c.JSON(http.StatusOK, models.Result{Code: 400, Msg: "优惠券已失效"})
+				return
+			}
+			discount = applyCouponDiscount(total, selectedCoupon)
+			if discount <= 0 {
+				c.JSON(http.StatusOK, models.Result{Code: 400, Msg: "订单金额未达到优惠券使用门槛"})
+				return
+			}
+			payAmount = total - discount
+		}
+
 		// 生成订单编号
 		orderNo := fmt.Sprintf("ZX%d%04d", time.Now().Unix(), rand.Intn(10000))
 
@@ -80,15 +102,19 @@ func WxCreateOrder(db *gorm.DB) gin.HandlerFunc {
 		}
 
 		order := models.Order{
-			OrderNo:     orderNo,
-			UserID:      userID,
-			UserName:    user.Nickname,
-			TotalAmount: total,
-			Status:      1, // 已付款（模拟）
-			StoreID:     req.StoreID,
-			StoreName:   storeName,
-			PickupCode:  fmt.Sprintf("%04d", rand.Intn(10000)),
-			Remark:      req.Remark,
+			OrderNo:        orderNo,
+			UserID:         userID,
+			UserName:       user.Nickname,
+			TotalAmount:    total,
+			DiscountAmount: discount,
+			PayAmount:      payAmount,
+			CouponID:       selectedCoupon.ID,
+			CouponName:     selectedCoupon.CouponName,
+			Status:         1, // 已付款（模拟）
+			StoreID:        req.StoreID,
+			StoreName:      storeName,
+			PickupCode:     fmt.Sprintf("%04d", rand.Intn(10000)),
+			Remark:         req.Remark,
 		}
 
 		tx := db.Begin()
@@ -96,6 +122,20 @@ func WxCreateOrder(db *gorm.DB) gin.HandlerFunc {
 			tx.Rollback()
 			c.JSON(http.StatusOK, models.Result{Code: 500, Msg: "建立订单失败"})
 			return
+		}
+
+		if selectedCoupon.ID > 0 {
+			now := time.Now()
+			if err := tx.Model(&models.UserCoupon{}).Where("id = ? AND status = 0", selectedCoupon.ID).Updates(map[string]interface{}{
+				"status":   1,
+				"order_id": order.ID,
+				"used_at":  &now,
+			}).Error; err != nil {
+				tx.Rollback()
+				c.JSON(http.StatusOK, models.Result{Code: 500, Msg: "优惠券使用失败"})
+				return
+			}
+			tx.Model(&models.Coupon{}).Where("id = ?", selectedCoupon.CouponID).Update("used", gorm.Expr("used + 1"))
 		}
 
 		for _, it := range req.Items {
@@ -131,6 +171,7 @@ func WxCreateOrder(db *gorm.DB) gin.HandlerFunc {
 				c.JSON(http.StatusOK, models.Result{Code: 400, Msg: fmt.Sprintf("商品「%s」库存不足", com.Name)})
 				return
 			}
+			CreateStockLog(tx, com, -qty, com.Stock, com.Stock-qty, "order", order.ID, "订单扣减库存", "wx")
 		}
 
 		// 清空购物车中已结算的项目
@@ -144,7 +185,7 @@ func WxCreateOrder(db *gorm.DB) gin.HandlerFunc {
 		db.Create(&models.Message{
 			UserID:  userID,
 			Title:   "订单建立成功",
-			Content: fmt.Sprintf("您的订单 %s 已建立，总金额 ¥%.2f，取货码 %s", orderNo, total, order.PickupCode),
+			Content: fmt.Sprintf("您的订单 %s 已建立，实付 ¥%.2f，取货码 %s", orderNo, payAmount, order.PickupCode),
 			Type:    1,
 		})
 
@@ -257,27 +298,79 @@ func AdminUpdateOrderStatus(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
+		oldStatus := order.Status
+		tx := db.Begin()
+
 		order.Status = req.Status
 		if req.StoreID > 0 {
 			order.StoreID = req.StoreID
 			var store models.Store
-			if db.First(&store, req.StoreID).Error == nil {
+			if tx.First(&store, req.StoreID).Error == nil {
 				order.StoreName = store.Name
 			}
 		}
 		if order.Status == 2 && order.PickupCode == "" {
 			order.PickupCode = fmt.Sprintf("%04d", rand.Intn(10000))
 		}
-		db.Save(&order)
+		if order.Status == 3 && order.VerifyTime == nil {
+			now := time.Now()
+			order.VerifyBy = c.GetString("username")
+			if order.VerifyBy == "" {
+				order.VerifyBy = "admin"
+			}
+			order.VerifyTime = &now
+		}
+
+		if oldStatus != 4 && order.Status == 4 {
+			var items []models.OrderItem
+			tx.Where("order_id = ?", order.ID).Find(&items)
+			for _, item := range items {
+				var com models.Commodity
+				if tx.First(&com, item.CommodityID).Error != nil {
+					continue
+				}
+				before := com.Stock
+				after := before + item.Quantity
+				if err := tx.Model(&models.Commodity{}).Where("id = ?", com.ID).Updates(map[string]interface{}{
+					"stock": gorm.Expr("stock + ?", item.Quantity),
+					"sales": gorm.Expr("CASE WHEN sales >= ? THEN sales - ? ELSE 0 END", item.Quantity, item.Quantity),
+				}).Error; err != nil {
+					tx.Rollback()
+					c.JSON(http.StatusOK, models.Result{Code: 500, Msg: "库存回滚失败"})
+					return
+				}
+				CreateStockLog(tx, com, item.Quantity, before, after, "cancel", order.ID, "订单取消回滚库存", c.GetString("username"))
+			}
+
+			if order.CouponID > 0 {
+				var userCoupon models.UserCoupon
+				tx.First(&userCoupon, order.CouponID)
+				tx.Model(&models.UserCoupon{}).Where("id = ? AND order_id = ?", order.CouponID, order.ID).Updates(map[string]interface{}{
+					"status":   0,
+					"order_id": 0,
+					"used_at":  nil,
+				})
+				if userCoupon.CouponID > 0 {
+					tx.Model(&models.Coupon{}).Where("id = ? AND used > 0", userCoupon.CouponID).Update("used", gorm.Expr("used - 1"))
+				}
+			}
+		}
+
+		if err := tx.Save(&order).Error; err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusOK, models.Result{Code: 500, Msg: "更新失败"})
+			return
+		}
 
 		// 状态变更通知
 		statusText := map[int]string{0: "待付款", 1: "已付款", 2: "待取货", 3: "已取货", 4: "已取消"}
-		db.Create(&models.Message{
+		tx.Create(&models.Message{
 			UserID:  order.UserID,
 			Title:   "订单状态更新",
 			Content: fmt.Sprintf("订单 %s 状态已更新为「%s」", order.OrderNo, statusText[order.Status]),
 			Type:    1,
 		})
+		tx.Commit()
 
 		c.JSON(http.StatusOK, models.Result{Code: 0, Msg: "更新成功"})
 	}

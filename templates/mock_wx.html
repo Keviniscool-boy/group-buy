@@ -160,6 +160,13 @@
     <div class="store-select">
       <select id="pickStoreSelect"><option value="0">请选择自提门店</option></select>
     </div>
+    <div class="store-select">
+      <select id="cartCouponSelect" onchange="selectCartCoupon()"><option value="0">不使用优惠券</option></select>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;font-size:12px;color:#999">
+        <span id="cartDiscount">暂无可用优惠券</span>
+        <span onclick="claimAvailableCoupons()" style="color:var(--primary);cursor:pointer">一键领券</span>
+      </div>
+    </div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px">
       <span style="font-size:16px">合计: <b style="color:#FF4444;font-size:20px" id="cartTotal">¥0.00</b></span>
       <button onclick="submitOrder()" style="background:var(--primary);color:#fff;border:none;padding:12px 32px;border-radius:24px;font-size:15px;font-weight:600;cursor:pointer">立即结算</button>
@@ -212,6 +219,7 @@
 var TOKEN='',USER_ID=0,USER_NAME='';
 var BASE='';
 var currentCat='';
+var selectedCouponId=0;
 
 function html(v){
   return String(v==null?'':v).replace(/[&<>"']/g,function(ch){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch];});
@@ -430,6 +438,7 @@ function loadCart(){
       document.getElementById('cartList').innerHTML=h;
       document.getElementById('cartTotal').innerText='¥'+total.toFixed(2);
       document.getElementById('cartFooter').hidden=!anyChecked;
+      if(anyChecked) loadCartCoupons(total);
     }
   });
 }
@@ -448,6 +457,46 @@ function checkAllCart(){
 }
 function clearCart(){ajax('/wx/cart/clear','DELETE').then(function(d){toast(d.msg);loadCart();});}
 
+function loadCartCoupons(total){
+  ajax('/wx/my-coupons?status=0&total='+encodeURIComponent(total.toFixed(2))).then(function(d){
+    var sel=document.getElementById('cartCouponSelect');
+    if(!sel) return;
+    var list=d.data||[];
+    var h='<option value="0" data-amount="0">不使用优惠券</option>';
+    list.forEach(function(c){
+      h+='<option value="'+c.id+'" data-amount="'+Number(c.amount||0)+'">'+html(c.coupon_name)+' - 减¥'+Number(c.amount||0).toFixed(2)+'</option>';
+    });
+    sel.innerHTML=h;
+    if(list.some(function(c){return c.id==selectedCouponId;})){
+      sel.value=String(selectedCouponId);
+    }else{
+      selectedCouponId=0;
+      sel.value='0';
+    }
+    selectCartCoupon();
+  });
+}
+function selectCartCoupon(){
+  var sel=document.getElementById('cartCouponSelect');
+  if(!sel) return;
+  selectedCouponId=parseInt(sel.value)||0;
+  var amount=Number(sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].getAttribute('data-amount') : 0);
+  document.getElementById('cartDiscount').innerText=selectedCouponId?'已优惠 ¥'+amount.toFixed(2):'不使用优惠券';
+}
+function claimAvailableCoupons(){
+  ajax('/wx/coupons').then(function(d){
+    var list=d.data||[];
+    if(list.length===0){toast('暂无可领取优惠券');return;}
+    var pending=list.length;
+    list.forEach(function(c){
+      ajax('/wx/coupons/'+c.id+'/receive','POST',{}).finally(function(){
+        pending--;
+        if(pending===0){toast('领券完成');loadCart();}
+      });
+    });
+  });
+}
+
 function submitOrder(){
   var storeId=parseInt(document.getElementById('pickStoreSelect').value)||0;
   if(!storeId){toast('请选择自提门店');return;}
@@ -456,9 +505,9 @@ function submitOrder(){
     if(d.code===0){
       var items=(d.data||[]).filter(function(it){return it.checked==1;});
       if(items.length===0){toast('请勾选要结算的商品');return;}
-      ajax('/wx/orders','POST',{items:items,store_id:storeId}).then(function(r){
+      ajax('/wx/orders','POST',{items:items,store_id:storeId,coupon_id:selectedCouponId}).then(function(r){
         toast(r.msg);
-        if(r.code===0){loadCart();loadCartStores();switchPage('order');}
+        if(r.code===0){selectedCouponId=0;loadCart();loadCartStores();switchPage('order');}
       });
     }
   });
@@ -509,7 +558,8 @@ function loadOrders(){
         h+='<div class="order-card"><div class="top"><span>'+html(o.order_no)+'</span><b>'+orderStatus(o.status)+'</b></div>';
         (o.items||[]).forEach(function(i){h+='<div class="item"><span>'+html(i.commodity_name)+' x'+i.quantity+'</span><span>¥'+i.price+'</span></div>';});
         h+='<div style="font-size:12px;color:#999;margin-top:8px">自提门店：'+html(o.store_name||'未选择')+'　取货码：'+html(o.pickup_code||'-')+'</div>';
-        h+='<div class="foot"><b>合计 ¥'+Number(o.total_amount||0).toFixed(2)+'</b>';
+        if(Number(o.discount_amount||0)>0) h+='<div style="font-size:12px;color:#FF6B35;margin-top:6px">优惠券：'+html(o.coupon_name||'')+'，已减 ¥'+Number(o.discount_amount||0).toFixed(2)+'</div>';
+        h+='<div class="foot"><b>实付 ¥'+Number(o.pay_amount||o.total_amount||0).toFixed(2)+'</b>';
         if(o.status==2) h+='<button onclick="confirmOrder('+o.id+')">确认取货</button>';
         h+='</div></div>';
       });

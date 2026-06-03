@@ -115,6 +115,7 @@ func UpdateCommodity(db *gorm.DB) gin.HandlerFunc {
 			c.JSON(http.StatusOK, models.Result{Code: 400, Msg: "商品不存在"})
 			return
 		}
+		oldStock := com.Stock
 		c.ShouldBindJSON(&com)
 		// 更新分类名称
 		var cat models.CommodityCategory
@@ -122,6 +123,15 @@ func UpdateCommodity(db *gorm.DB) gin.HandlerFunc {
 			com.CategoryName = cat.Name
 		}
 		db.Save(&com)
+		if com.Stock != oldStock {
+			typ := "admin"
+			remark := "后台调整库存"
+			if com.Stock > oldStock {
+				typ = "restock"
+				remark = "后台补货入库"
+			}
+			CreateStockLog(db, com, com.Stock-oldStock, oldStock, com.Stock, typ, com.ID, remark, c.GetString("username"))
+		}
 		c.JSON(http.StatusOK, models.Result{Code: 0, Msg: "修改成功"})
 	}
 }

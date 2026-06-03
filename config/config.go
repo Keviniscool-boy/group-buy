@@ -1,7 +1,7 @@
 package config
 
 var (
-	// DB 资料库连线参数（请依据实际环境修改）
+	// DB 资料库连线参数
 	DBUser     = "root"
 	DBPassword = "123456"
 	DBHost     = "127.0.0.1"

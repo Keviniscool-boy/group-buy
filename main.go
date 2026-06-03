@@ -43,6 +43,10 @@ func main() {
 		&models.Message{},
 		&models.Ads{},
 		&models.Announcement{},
+		&models.OperationLog{},
+		&models.Coupon{},
+		&models.UserCoupon{},
+		&models.StockLog{},
 	)
 	if err != nil {
 		log.Fatalf("资料库迁移失败: %v", err)
@@ -105,6 +109,18 @@ func main() {
 	r.GET("/admin/message", func(c *gin.Context) {
 		c.HTML(200, "admin_dashboard.html", nil)
 	})
+	r.GET("/admin/operation-log", func(c *gin.Context) {
+		c.HTML(200, "admin_dashboard.html", nil)
+	})
+	r.GET("/admin/coupon", func(c *gin.Context) {
+		c.HTML(200, "admin_dashboard.html", nil)
+	})
+	r.GET("/admin/stock-log", func(c *gin.Context) {
+		c.HTML(200, "admin_dashboard.html", nil)
+	})
+	r.GET("/admin/verify", func(c *gin.Context) {
+		c.HTML(200, "admin_dashboard.html", nil)
+	})
 	r.GET("/mock-wx", func(c *gin.Context) {
 		c.HTML(200, "mock_wx.html", nil)
 	})
@@ -123,6 +139,7 @@ func main() {
 		// 需 JWT 认证
 		auth := admin.Group("")
 		auth.Use(middleware.AdminAuth())
+		auth.Use(handlers.AdminAuditLog(db))
 		{
 			// 仪表板
 			auth.GET("/dashboard", handlers.AdminDashboard(db))
@@ -156,6 +173,7 @@ func main() {
 			auth.GET("/orders/:id", handlers.AdminGetOrder(db))
 			auth.GET("/orders/:id/items", handlers.AdminListOrderItems(db))
 			auth.PUT("/orders/:id/status", handlers.AdminUpdateOrderStatus(db))
+			auth.POST("/orders/verify", handlers.AdminVerifyPickupCode(db))
 
 			// 自提门店
 			auth.GET("/stores", handlers.ListStores(db))
@@ -195,6 +213,16 @@ func main() {
 
 			// 团长销量
 			auth.GET("/leader-sales", handlers.LeaderSales(db))
+
+			// 操作审计日志
+			auth.GET("/operation-logs", handlers.ListOperationLogs(db))
+
+			// 营销、库存与核销
+			auth.GET("/coupons", handlers.AdminListCoupons(db))
+			auth.POST("/coupons", handlers.CreateCoupon(db))
+			auth.PUT("/coupons/:id", handlers.UpdateCoupon(db))
+			auth.DELETE("/coupons/:id", handlers.DeleteCoupon(db))
+			auth.GET("/stock-logs", handlers.AdminListStockLogs(db))
 		}
 	}
 
@@ -212,6 +240,7 @@ func main() {
 		wx.GET("/stores", handlers.WxListStores(db))
 		wx.GET("/ads", handlers.ListAds(db))
 		wx.GET("/announcements", handlers.ListAnnouncements(db))
+		wx.GET("/coupons", handlers.WxListCoupons(db))
 
 		// 需 JWT 认证
 		auth := wx.Group("")
@@ -233,6 +262,10 @@ func main() {
 			auth.POST("/orders", handlers.WxCreateOrder(db))
 			auth.GET("/orders", handlers.WxListOrders(db))
 			auth.PUT("/orders/:id/confirm", handlers.WxConfirmOrder(db))
+
+			// 优惠券
+			auth.POST("/coupons/:id/receive", handlers.WxReceiveCoupon(db))
+			auth.GET("/my-coupons", handlers.WxListMyCoupons(db))
 
 			// 消息
 			auth.GET("/messages", handlers.ListMessages(db))
@@ -289,7 +322,7 @@ func seedData(db *gorm.DB) {
 			RoleName: "超级管理员",
 			Status:   1,
 		})
-		log.Println("预设管理员已建立: admin / admin123")
+
 	}
 
 	// ── 建立预设分类 ──────────────────────────
@@ -430,6 +463,21 @@ func seedData(db *gorm.DB) {
 		}
 		for _, a := range anns {
 			db.Create(&a)
+		}
+	}
+
+	var couponCount int64
+	db.Model(&models.Coupon{}).Count(&couponCount)
+	if couponCount == 0 {
+		now := time.Now()
+		end := now.AddDate(0, 1, 0)
+		coupons := []models.Coupon{
+			{Name: "新人满30减5", Threshold: 30, Amount: 5, Total: 500, Status: 1, StartTime: &now, EndTime: &end},
+			{Name: "社区团购满80减12", Threshold: 80, Amount: 12, Total: 300, Status: 1, StartTime: &now, EndTime: &end},
+			{Name: "生鲜专享满120减20", Threshold: 120, Amount: 20, Total: 200, Status: 1, StartTime: &now, EndTime: &end},
+		}
+		for _, coupon := range coupons {
+			db.Create(&coupon)
 		}
 	}
 }

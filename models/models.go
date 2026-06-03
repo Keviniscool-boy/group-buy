@@ -89,10 +89,10 @@ type Commodity struct {
 	Image          string     `gorm:"size:255" json:"image"`
 	Images         string     `gorm:"type:text" json:"images"`
 	Description    string     `gorm:"type:text" json:"description"`
-	Status         int        `gorm:"default:1" json:"status"`       // 1上架 0下架
-	SaleStartTime  *time.Time `json:"sale_start_time"`               // 预售开始时间
-	GroupStartTime *time.Time `json:"group_start_time"`              // 团购开始时间
-	IsGroupon      int        `gorm:"default:0" json:"is_groupon"`   // 0普通 1团购
+	Status         int        `gorm:"default:1" json:"status"`     // 1上架 0下架
+	SaleStartTime  *time.Time `json:"sale_start_time"`             // 预售开始时间
+	GroupStartTime *time.Time `json:"group_start_time"`            // 团购开始时间
+	IsGroupon      int        `gorm:"default:0" json:"is_groupon"` // 0普通 1团购
 	CreatedAt      time.Time  `json:"created_at"`
 	UpdatedAt      time.Time  `json:"updated_at"`
 }
@@ -147,18 +147,24 @@ func (CartItem) TableName() string { return "cs_cartitem" }
 // 10. cs_order – 订单表
 // ──────────────────────────────────────────────
 type Order struct {
-	ID          uint      `gorm:"primaryKey" json:"id"`
-	OrderNo     string    `gorm:"uniqueIndex;size:32;not null" json:"order_no"`
-	UserID      uint      `gorm:"index;not null" json:"user_id"`
-	UserName    string    `gorm:"size:50" json:"user_name"`
-	TotalAmount float64   `gorm:"type:decimal(10,2);not null" json:"total_amount"`
-	Status      int       `gorm:"default:0" json:"status"` // 0待付款 1已付款 2待取货 3已取货 4已取消
-	StoreID     uint      `gorm:"default:0" json:"store_id"`
-	StoreName   string    `gorm:"size:100" json:"store_name"`
-	PickupCode  string    `gorm:"size:10" json:"pickup_code"`
-	Remark      string    `gorm:"size:255" json:"remark"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
+	ID             uint       `gorm:"primaryKey" json:"id"`
+	OrderNo        string     `gorm:"uniqueIndex;size:32;not null" json:"order_no"`
+	UserID         uint       `gorm:"index;not null" json:"user_id"`
+	UserName       string     `gorm:"size:50" json:"user_name"`
+	TotalAmount    float64    `gorm:"type:decimal(10,2);not null" json:"total_amount"`
+	DiscountAmount float64    `gorm:"type:decimal(10,2);default:0" json:"discount_amount"`
+	PayAmount      float64    `gorm:"type:decimal(10,2);default:0" json:"pay_amount"`
+	CouponID       uint       `gorm:"default:0" json:"coupon_id"`
+	CouponName     string     `gorm:"size:100" json:"coupon_name"`
+	Status         int        `gorm:"default:0" json:"status"` // 0待付款 1已付款 2待取货 3已取货 4已取消
+	StoreID        uint       `gorm:"default:0" json:"store_id"`
+	StoreName      string     `gorm:"size:100" json:"store_name"`
+	PickupCode     string     `gorm:"size:10" json:"pickup_code"`
+	VerifyBy       string     `gorm:"size:50" json:"verify_by"`
+	VerifyTime     *time.Time `json:"verify_time"`
+	Remark         string     `gorm:"size:255" json:"remark"`
+	CreatedAt      time.Time  `json:"created_at"`
+	UpdatedAt      time.Time  `json:"updated_at"`
 }
 
 func (Order) TableName() string { return "cs_order" }
@@ -254,6 +260,77 @@ type Announcement struct {
 }
 
 func (Announcement) TableName() string { return "cs_announcement" }
+
+// ──────────────────────────────────────────────
+// 17. cs_operation_log – 后台操作审计日志
+// ──────────────────────────────────────────────
+type OperationLog struct {
+	ID        uint      `gorm:"primaryKey" json:"id"`
+	AdminID   uint      `gorm:"index" json:"admin_id"`
+	Username  string    `gorm:"size:50" json:"username"`
+	RoleName  string    `gorm:"size:50" json:"role_name"`
+	Method    string    `gorm:"size:10" json:"method"`
+	Path      string    `gorm:"size:255" json:"path"`
+	Action    string    `gorm:"size:50" json:"action"`
+	IP        string    `gorm:"size:64" json:"ip"`
+	UserAgent string    `gorm:"size:255" json:"user_agent"`
+	Status    int       `json:"status"`
+	Duration  int64     `json:"duration"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+func (OperationLog) TableName() string { return "cs_operation_log" }
+
+// Coupon stores platform promotion rules.
+type Coupon struct {
+	ID        uint       `gorm:"primaryKey" json:"id"`
+	Name      string     `gorm:"size:100;not null" json:"name"`
+	Threshold float64    `gorm:"type:decimal(10,2);default:0" json:"threshold"`
+	Amount    float64    `gorm:"type:decimal(10,2);not null" json:"amount"`
+	Total     int        `gorm:"default:0" json:"total"`
+	Received  int        `gorm:"default:0" json:"received"`
+	Used      int        `gorm:"default:0" json:"used"`
+	Status    int        `gorm:"default:1" json:"status"`
+	StartTime *time.Time `json:"start_time"`
+	EndTime   *time.Time `json:"end_time"`
+	CreatedAt time.Time  `json:"created_at"`
+	UpdatedAt time.Time  `json:"updated_at"`
+}
+
+func (Coupon) TableName() string { return "cs_coupon" }
+
+// UserCoupon is one claimed coupon owned by a user.
+type UserCoupon struct {
+	ID         uint       `gorm:"primaryKey" json:"id"`
+	UserID     uint       `gorm:"index;not null" json:"user_id"`
+	CouponID   uint       `gorm:"index;not null" json:"coupon_id"`
+	CouponName string     `gorm:"size:100" json:"coupon_name"`
+	Threshold  float64    `gorm:"type:decimal(10,2)" json:"threshold"`
+	Amount     float64    `gorm:"type:decimal(10,2)" json:"amount"`
+	Status     int        `gorm:"default:0" json:"status"`
+	OrderID    uint       `gorm:"default:0" json:"order_id"`
+	CreatedAt  time.Time  `json:"created_at"`
+	UsedAt     *time.Time `json:"used_at"`
+}
+
+func (UserCoupon) TableName() string { return "cs_user_coupon" }
+
+// StockLog records every inventory movement.
+type StockLog struct {
+	ID            uint      `gorm:"primaryKey" json:"id"`
+	CommodityID   uint      `gorm:"index;not null" json:"commodity_id"`
+	CommodityName string    `gorm:"size:100" json:"commodity_name"`
+	ChangeQty     int       `json:"change_qty"`
+	BeforeQty     int       `json:"before_qty"`
+	AfterQty      int       `json:"after_qty"`
+	Type          string    `gorm:"size:30" json:"type"`
+	RefID         uint      `gorm:"default:0" json:"ref_id"`
+	Remark        string    `gorm:"size:255" json:"remark"`
+	Operator      string    `gorm:"size:50" json:"operator"`
+	CreatedAt     time.Time `json:"created_at"`
+}
+
+func (StockLog) TableName() string { return "cs_stock_log" }
 
 // ──────────────────────────────────────────────
 // 辅助结构
