@@ -1,7 +1,7 @@
 const { request } = require('../../utils/request')
 
 Page({
-  data: { items: [], stores: [], storeIndex: -1, storeName: '', total: '0.00' },
+  data: { items: [], stores: [], storeIndex: -1, storeId: 0, storeName: '', total: '0.00' },
   onShow() {
     this.loadCart()
     this.loadStores()
@@ -15,12 +15,24 @@ Page({
   },
   loadStores() {
     request({ url: '/wx/stores' }).then((res) => {
-      if (res.code === 0) this.setData({ stores: res.data || [] })
+      if (res.code === 0) {
+        const stores = res.data || []
+        let storeIndex = this.data.storeIndex
+        if (this.data.storeId) {
+          storeIndex = stores.findIndex((store) => store.id === this.data.storeId)
+        }
+        this.setData({
+          stores,
+          storeIndex,
+          storeName: storeIndex >= 0 && stores[storeIndex] ? stores[storeIndex].name : ''
+        })
+      }
     })
   },
   selectStore(e) {
     const index = Number(e.detail.value)
-    this.setData({ storeIndex: index, storeName: this.data.stores[index].name })
+    const store = this.data.stores[index]
+    this.setData({ storeIndex: index, storeId: store.id, storeName: store.name })
   },
   toggleCheck(e) {
     request({
@@ -52,7 +64,7 @@ Page({
     request({
       url: '/wx/orders',
       method: 'POST',
-      data: { items, store_id: this.data.stores[this.data.storeIndex].id }
+      data: { items, store_id: this.data.storeId || this.data.stores[this.data.storeIndex].id }
     }).then((res) => {
       wx.showToast({ title: res.msg || '已提交', icon: 'none' })
       if (res.code === 0) wx.switchTab({ url: '/pages/orders/orders' })

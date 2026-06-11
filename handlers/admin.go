@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"net/http"
 	"strconv"
 	"time"
@@ -9,6 +10,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 
+	"zhixiang-group-buying/config"
 	"zhixiang-group-buying/models"
 )
 
@@ -221,6 +223,15 @@ func WxGetProfile(db *gorm.DB) gin.HandlerFunc {
 // AdminDashboard GET /admin/dashboard
 func AdminDashboard(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		cacheKey := config.CacheKey("dashboard")
+		if cached, ok := config.CacheGet(c, cacheKey); ok {
+			var data gin.H
+			if json.Unmarshal([]byte(cached), &data) == nil {
+				c.JSON(http.StatusOK, models.Result{Code: 0, Data: data})
+				return
+			}
+		}
+
 		var userCount, orderCount, commodityCount, todayOrderCount, pendingPickupCount, lowStockCount, activeGrouponCount int64
 		db.Model(&models.User{}).Count(&userCount)
 		db.Model(&models.Order{}).Count(&orderCount)
@@ -324,7 +335,7 @@ func AdminDashboard(db *gorm.DB) gin.HandlerFunc {
 		var paidOrderCount int64
 		db.Model(&models.Order{}).Where("status = ?", 1).Count(&paidOrderCount)
 
-		c.JSON(http.StatusOK, models.Result{Code: 0, Data: gin.H{
+		data := gin.H{
 			"user_count":           userCount,
 			"order_count":          orderCount,
 			"commodity_count":      commodityCount,
@@ -341,6 +352,12 @@ func AdminDashboard(db *gorm.DB) gin.HandlerFunc {
 			"recent_orders":        recentOrders,
 			"top_products":         topProducts,
 			"paid_order_count":     paidOrderCount,
-		}})
+		}
+
+		if jsonData, err := json.Marshal(data); err == nil {
+			config.CacheSet(c, cacheKey, jsonData, 2*time.Minute)
+		}
+
+		c.JSON(http.StatusOK, models.Result{Code: 0, Data: data})
 	}
 }

@@ -1,12 +1,16 @@
 package handlers
 
 import (
+	"encoding/json"
+	"log"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 
+	"zhixiang-group-buying/config"
 	"zhixiang-group-buying/models"
 )
 
@@ -15,8 +19,27 @@ import (
 // ListCategories GET /admin/categories /wx/categories
 func ListCategories(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		start := time.Now()
+		cacheKey := config.CacheKey("categories")
+		if cached, ok := config.CacheGet(c, cacheKey); ok {
+			var list []models.CommodityCategory
+			if json.Unmarshal([]byte(cached), &list) == nil {
+				elapsed := time.Since(start)
+				log.Printf("[性能] ✅ 分类列表 - 缓存命中，响应时间: %v", elapsed)
+				c.JSON(http.StatusOK, models.Result{Code: 0, Data: list})
+				return
+			}
+		}
+
 		var list []models.CommodityCategory
 		db.Order("sort asc").Find(&list)
+
+		if data, err := json.Marshal(list); err == nil {
+			config.CacheSet(c, cacheKey, data, 10*time.Minute)
+		}
+
+		elapsed := time.Since(start)
+		log.Printf("[性能] ❌ 分类列表 - 缓存未命中，响应时间: %v", elapsed)
 		c.JSON(http.StatusOK, models.Result{Code: 0, Data: list})
 	}
 }
@@ -30,6 +53,7 @@ func CreateCategory(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 		db.Create(&cat)
+		config.CacheDel(c, config.CacheKey("categories"))
 		c.JSON(http.StatusOK, models.Result{Code: 0, Msg: "新增成功"})
 	}
 }
@@ -45,6 +69,7 @@ func UpdateCategory(db *gorm.DB) gin.HandlerFunc {
 		}
 		c.ShouldBindJSON(&cat)
 		db.Save(&cat)
+		config.CacheDel(c, config.CacheKey("categories"))
 		c.JSON(http.StatusOK, models.Result{Code: 0, Msg: "修改成功"})
 	}
 }
@@ -54,6 +79,7 @@ func DeleteCategory(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		db.Delete(&models.CommodityCategory{}, id)
+		config.CacheDel(c, config.CacheKey("categories"))
 		c.JSON(http.StatusOK, models.Result{Code: 0, Msg: "删除成功"})
 	}
 }
@@ -102,6 +128,7 @@ func CreateCommodity(db *gorm.DB) gin.HandlerFunc {
 			com.CategoryName = cat.Name
 		}
 		db.Create(&com)
+		config.CacheDelPattern(c, config.CacheKey("commodities")+"*")
 		c.JSON(http.StatusOK, models.Result{Code: 0, Msg: "发布成功"})
 	}
 }
@@ -132,6 +159,7 @@ func UpdateCommodity(db *gorm.DB) gin.HandlerFunc {
 			}
 			CreateStockLog(db, com, com.Stock-oldStock, oldStock, com.Stock, typ, com.ID, remark, c.GetString("username"))
 		}
+		config.CacheDelPattern(c, config.CacheKey("commodities")+"*")
 		c.JSON(http.StatusOK, models.Result{Code: 0, Msg: "修改成功"})
 	}
 }
@@ -147,6 +175,7 @@ func ToggleCommodity(db *gorm.DB) gin.HandlerFunc {
 		}
 		com.Status = 1 - com.Status
 		db.Save(&com)
+		config.CacheDelPattern(c, config.CacheKey("commodities")+"*")
 		c.JSON(http.StatusOK, models.Result{Code: 0, Msg: "操作成功"})
 	}
 }
@@ -156,6 +185,7 @@ func DeleteCommodity(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		db.Delete(&models.Commodity{}, id)
+		config.CacheDelPattern(c, config.CacheKey("commodities")+"*")
 		c.JSON(http.StatusOK, models.Result{Code: 0, Msg: "删除成功"})
 	}
 }
@@ -165,9 +195,24 @@ func DeleteCommodity(db *gorm.DB) gin.HandlerFunc {
 // WxListCommodities GET /wx/commodities
 func WxListCommodities(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		start := time.Now()
 		categoryID := c.Query("category_id")
 		keyword := c.Query("keyword")
 		isGroupon := c.Query("is_groupon") // 1=团购商品
+
+		// 只在无筛选条件时使用缓存
+		if categoryID == "" && keyword == "" && isGroupon == "" {
+			cacheKey := config.CacheKey("commodities", "list")
+			if cached, ok := config.CacheGet(c, cacheKey); ok {
+				var list []models.Commodity
+				if json.Unmarshal([]byte(cached), &list) == nil {
+					elapsed := time.Since(start)
+					log.Printf("[性能] ✅ 商品列表 - 缓存命中，响应时间: %v", elapsed)
+					c.JSON(http.StatusOK, models.Result{Code: 0, Data: list})
+					return
+				}
+			}
+		}
 
 		query := db.Where("status = 1")
 		if categoryID != "" {
@@ -183,6 +228,15 @@ func WxListCommodities(db *gorm.DB) gin.HandlerFunc {
 		var list []models.Commodity
 		query.Order("id desc").Find(&list)
 
+		// 无筛选条件时写入缓存
+		if categoryID == "" && keyword == "" && isGroupon == "" {
+			if data, err := json.Marshal(list); err == nil {
+				config.CacheSet(c, config.CacheKey("commodities", "list"), data, 5*time.Minute)
+			}
+		}
+
+		elapsed := time.Since(start)
+		log.Printf("[性能] ❌ 商品列表 - 缓存未命中，响应时间: %v", elapsed)
 		c.JSON(http.StatusOK, models.Result{Code: 0, Data: list})
 	}
 }
@@ -190,12 +244,32 @@ func WxListCommodities(db *gorm.DB) gin.HandlerFunc {
 // WxGetCommodity GET /wx/commodities/:id
 func WxGetCommodity(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		start := time.Now()
 		id := c.Param("id")
+
+		cacheKey := config.CacheKey("commodities", "detail", id)
+		if cached, ok := config.CacheGet(c, cacheKey); ok {
+			var com models.Commodity
+			if json.Unmarshal([]byte(cached), &com) == nil {
+				elapsed := time.Since(start)
+				log.Printf("[性能] ✅ 商品详情(ID:%s) - 缓存命中，响应时间: %v", id, elapsed)
+				c.JSON(http.StatusOK, models.Result{Code: 0, Data: com})
+				return
+			}
+		}
+
 		var com models.Commodity
 		if db.First(&com, id).Error != nil {
 			c.JSON(http.StatusOK, models.Result{Code: 400, Msg: "商品不存在"})
 			return
 		}
+
+		if data, err := json.Marshal(com); err == nil {
+			config.CacheSet(c, cacheKey, data, 10*time.Minute)
+		}
+
+		elapsed := time.Since(start)
+		log.Printf("[性能] ❌ 商品详情(ID:%s) - 缓存未命中，响应时间: %v", id, elapsed)
 		c.JSON(http.StatusOK, models.Result{Code: 0, Data: com})
 	}
 }

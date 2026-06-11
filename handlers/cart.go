@@ -1,12 +1,15 @@
 package handlers
 
 import (
+	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 
+	"zhixiang-group-buying/config"
 	"zhixiang-group-buying/models"
 )
 
@@ -80,6 +83,7 @@ func WxAddToCart(db *gorm.DB) gin.HandlerFunc {
 			})
 		}
 
+		config.CacheDel(c, fmt.Sprintf("zhixiang:cart:%d", userID))
 		c.JSON(http.StatusOK, models.Result{Code: 0, Msg: "已加入购物车"})
 	}
 }
@@ -88,6 +92,15 @@ func WxAddToCart(db *gorm.DB) gin.HandlerFunc {
 func WxListCart(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userID := c.GetUint("userID")
+
+		cacheKey := fmt.Sprintf("zhixiang:cart:%d", userID)
+		if cached, ok := config.CacheGet(c, cacheKey); ok {
+			var items []models.CartItem
+			if json.Unmarshal([]byte(cached), &items) == nil {
+				c.JSON(http.StatusOK, models.Result{Code: 0, Data: items})
+				return
+			}
+		}
 
 		var cart models.ShoppingCart
 		db.Where("user_id = ?", userID).First(&cart)
@@ -98,6 +111,10 @@ func WxListCart(db *gorm.DB) gin.HandlerFunc {
 
 		var items []models.CartItem
 		db.Where("cart_id = ?", cart.ID).Order("id desc").Find(&items)
+
+		if data, err := json.Marshal(items); err == nil {
+			config.CacheSet(c, cacheKey, data, 30*time.Minute)
+		}
 
 		c.JSON(http.StatusOK, models.Result{Code: 0, Data: items})
 	}
@@ -136,6 +153,7 @@ func WxUpdateCartItem(db *gorm.DB) gin.HandlerFunc {
 			item.Checked = *req.Checked
 		}
 		db.Save(&item)
+		config.CacheDel(c, fmt.Sprintf("zhixiang:cart:%d", userID))
 		c.JSON(http.StatusOK, models.Result{Code: 0, Msg: "修改成功"})
 	}
 }
@@ -150,6 +168,7 @@ func WxDeleteCartItem(db *gorm.DB) gin.HandlerFunc {
 		db.Where("user_id = ?", userID).First(&cart)
 
 		db.Where("id = ? AND cart_id = ?", id, cart.ID).Delete(&models.CartItem{})
+		config.CacheDel(c, fmt.Sprintf("zhixiang:cart:%d", userID))
 		c.JSON(http.StatusOK, models.Result{Code: 0, Msg: "删除成功"})
 	}
 }
@@ -167,6 +186,7 @@ func WxCheckAllCart(db *gorm.DB) gin.HandlerFunc {
 		var cart models.ShoppingCart
 		db.Where("user_id = ?", userID).First(&cart)
 		db.Model(&models.CartItem{}).Where("cart_id = ?", cart.ID).Update("checked", req.Checked)
+		config.CacheDel(c, fmt.Sprintf("zhixiang:cart:%d", userID))
 
 		c.JSON(http.StatusOK, models.Result{Code: 0, Msg: "操作成功"})
 	}
@@ -179,6 +199,7 @@ func WxClearCart(db *gorm.DB) gin.HandlerFunc {
 		var cart models.ShoppingCart
 		db.Where("user_id = ?", userID).First(&cart)
 		db.Where("cart_id = ?", cart.ID).Delete(&models.CartItem{})
+		config.CacheDel(c, fmt.Sprintf("zhixiang:cart:%d", userID))
 		c.JSON(http.StatusOK, models.Result{Code: 0, Msg: "购物车已清空"})
 	}
 }

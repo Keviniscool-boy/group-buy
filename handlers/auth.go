@@ -4,19 +4,16 @@ import (
 	"fmt"
 	"math/rand"
 	"net/http"
-	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 
+	"zhixiang-group-buying/config"
 	"zhixiang-group-buying/middleware"
 	"zhixiang-group-buying/models"
 )
-
-// 简易内存验证码快取
-var captchaStore sync.Map
 
 // ─── 后台登入 ──────────────────────────────────
 
@@ -30,16 +27,17 @@ func AdminLogin(db *gorm.DB) gin.HandlerFunc {
 		}
 
 		// 验证码校验（演示环境直接回传验证码，但登录必须填写）
-		v, ok := captchaStore.Load(req.Username + "_captcha")
+		captchaKey := config.CacheKey("captcha", req.Username)
+		v, ok := config.CacheGet(c, captchaKey)
 		if !ok {
 			c.JSON(http.StatusOK, models.Result{Code: 400, Msg: "请先获取验证码"})
 			return
 		}
-		if v.(string) != req.Captcha {
+		if v != req.Captcha {
 			c.JSON(http.StatusOK, models.Result{Code: 400, Msg: "验证码错误"})
 			return
 		}
-		captchaStore.Delete(req.Username + "_captcha")
+		config.CacheDel(c, captchaKey)
 
 		var admin models.Admin
 		if err := db.Where("username = ?", req.Username).First(&admin).Error; err != nil {
@@ -120,7 +118,7 @@ func GetCaptcha(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 		code := fmt.Sprintf("%04d", rand.Intn(10000))
-		captchaStore.Store(username+"_captcha", code)
+		config.CacheSet(c, config.CacheKey("captcha", username), code, 5*time.Minute)
 		// 演示环境直接回传验证码
 		c.JSON(http.StatusOK, models.Result{Code: 0, Msg: "验证码已生成", Data: gin.H{"captcha": code}})
 	}

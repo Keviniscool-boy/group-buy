@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"encoding/json"
+	"fmt"
 	"math"
 	"net/http"
 	"strconv"
@@ -10,6 +12,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 
+	"zhixiang-group-buying/config"
 	"zhixiang-group-buying/models"
 )
 
@@ -88,6 +91,7 @@ func CreateCoupon(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 		db.Create(&coupon)
+		config.CacheDel(c, config.CacheKey("coupons", "wx_list"))
 		c.JSON(http.StatusOK, models.Result{Code: 0, Msg: "优惠券创建成功", Data: coupon})
 	}
 }
@@ -106,6 +110,7 @@ func UpdateCoupon(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 		db.Save(&coupon)
+		config.CacheDel(c, config.CacheKey("coupons", "wx_list"))
 		c.JSON(http.StatusOK, models.Result{Code: 0, Msg: "优惠券更新成功", Data: coupon})
 	}
 }
@@ -114,6 +119,7 @@ func UpdateCoupon(db *gorm.DB) gin.HandlerFunc {
 func DeleteCoupon(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		db.Delete(&models.Coupon{}, c.Param("id"))
+		config.CacheDel(c, config.CacheKey("coupons", "wx_list"))
 		c.JSON(http.StatusOK, models.Result{Code: 0, Msg: "优惠券删除成功"})
 	}
 }
@@ -121,6 +127,15 @@ func DeleteCoupon(db *gorm.DB) gin.HandlerFunc {
 // WxListCoupons GET /wx/coupons
 func WxListCoupons(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		cacheKey := config.CacheKey("coupons", "wx_list")
+		if cached, ok := config.CacheGet(c, cacheKey); ok {
+			var list []models.Coupon
+			if json.Unmarshal([]byte(cached), &list) == nil {
+				c.JSON(http.StatusOK, models.Result{Code: 0, Data: list})
+				return
+			}
+		}
+
 		var list []models.Coupon
 		db.Where("status = 1").Order("id desc").Find(&list)
 		now := time.Now()
@@ -130,6 +145,11 @@ func WxListCoupons(db *gorm.DB) gin.HandlerFunc {
 				usable = append(usable, coupon)
 			}
 		}
+
+		if data, err := json.Marshal(usable); err == nil {
+			config.CacheSet(c, cacheKey, data, 5*time.Minute)
+		}
+
 		c.JSON(http.StatusOK, models.Result{Code: 0, Data: usable})
 	}
 }
@@ -168,6 +188,8 @@ func WxReceiveCoupon(db *gorm.DB) gin.HandlerFunc {
 		tx.Model(&models.Coupon{}).Where("id = ?", coupon.ID).Update("received", gorm.Expr("received + 1"))
 		tx.Commit()
 
+		config.CacheDel(c, config.CacheKey("coupons", "wx_list"), config.CacheKey("user_coupons", fmt.Sprintf("%d", userID)))
+
 		c.JSON(http.StatusOK, models.Result{Code: 0, Msg: "领取成功", Data: userCoupon})
 	}
 }
@@ -178,6 +200,18 @@ func WxListMyCoupons(db *gorm.DB) gin.HandlerFunc {
 		userID := c.GetUint("userID")
 		status := c.Query("status")
 		total, _ := strconv.ParseFloat(c.DefaultQuery("total", "0"), 64)
+
+		// 无筛选条件时使用缓存
+		if status == "" && total == 0 {
+			cacheKey := config.CacheKey("user_coupons", fmt.Sprintf("%d", userID))
+			if cached, ok := config.CacheGet(c, cacheKey); ok {
+				var list []models.UserCoupon
+				if json.Unmarshal([]byte(cached), &list) == nil {
+					c.JSON(http.StatusOK, models.Result{Code: 0, Data: list})
+					return
+				}
+			}
+		}
 
 		query := db.Where("user_id = ?", userID)
 		if status != "" {
@@ -195,6 +229,14 @@ func WxListMyCoupons(db *gorm.DB) gin.HandlerFunc {
 			}
 			list = filtered
 		}
+
+		// 无筛选条件时写入缓存
+		if status == "" && total == 0 {
+			if data, err := json.Marshal(list); err == nil {
+				config.CacheSet(c, config.CacheKey("user_coupons", fmt.Sprintf("%d", userID)), data, 10*time.Minute)
+			}
+		}
+
 		c.JSON(http.StatusOK, models.Result{Code: 0, Data: list})
 	}
 }

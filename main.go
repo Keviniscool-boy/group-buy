@@ -25,6 +25,9 @@ func main() {
 	}
 	log.Println("资料库连线成功")
 
+	// ── 连线 Redis ──────────────────────────────
+	config.InitRedis()
+
 	// ── 自动迁移（建表） ─────────────────────────
 	err = db.AutoMigrate(
 		&models.Admin{},

@@ -1,12 +1,21 @@
 <view class="page">
-  <view class="card">
+  <view class="card login-card">
+    <view class="login-title">微信一键登录</view>
+    <view class="login-sub">当前状态：{{loginStatus}}</view>
+    <button class="primary login-btn" loading="{{loggingIn}}" bindtap="wxLogin">{{loginText}}</button>
+  </view>
+
+  <view class="card" wx:if="{{loggedIn}}">
+    <view class="avatar-row" wx:if="{{profile.avatar}}">
+      <image class="avatar" src="{{profile.avatar}}" mode="aspectFill" />
+    </view>
     <view class="label">昵称</view>
     <input value="{{profile.nickname}}" bindinput="onNickname" />
     <view class="label">电话</view>
     <input value="{{profile.phone}}" bindinput="onPhone" />
     <button class="primary" bindtap="saveProfile">保存资料</button>
   </view>
-  <view class="card">
+  <view class="card" wx:if="{{loggedIn}}">
     <view class="title">我的团购提醒</view>
     <view class="remind" wx:for="{{reminds}}" wx:key="id">
       <text>{{item.commodity_name}}</text>

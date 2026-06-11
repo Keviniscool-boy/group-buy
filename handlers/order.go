@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"fmt"
 	"math/rand"
 	"net/http"
@@ -10,6 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 
+	"zhixiang-group-buying/config"
 	"zhixiang-group-buying/models"
 )
 
@@ -189,6 +191,10 @@ func WxCreateOrder(db *gorm.DB) gin.HandlerFunc {
 			Type:    1,
 		})
 
+		// 清除相关缓存
+		config.CacheDel(c, config.CacheKey("dashboard"))
+		config.CacheDel(c, fmt.Sprintf("zhixiang:orders:%d", userID))
+
 		c.JSON(http.StatusOK, models.Result{Code: 0, Msg: "下单成功", Data: order})
 	}
 }
@@ -197,6 +203,20 @@ func WxCreateOrder(db *gorm.DB) gin.HandlerFunc {
 func WxListOrders(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userID := c.GetUint("userID")
+
+		cacheKey := fmt.Sprintf("zhixiang:orders:%d", userID)
+		if cached, ok := config.CacheGet(c, cacheKey); ok {
+			type OrderWithItems struct {
+				models.Order
+				Items []models.OrderItem `json:"items"`
+			}
+			var result []OrderWithItems
+			if json.Unmarshal([]byte(cached), &result) == nil {
+				c.JSON(http.StatusOK, models.Result{Code: 0, Data: result})
+				return
+			}
+		}
+
 		var list []models.Order
 		db.Where("user_id = ?", userID).Order("id desc").Find(&list)
 
@@ -210,6 +230,10 @@ func WxListOrders(db *gorm.DB) gin.HandlerFunc {
 			var items []models.OrderItem
 			db.Where("order_id = ?", o.ID).Find(&items)
 			result = append(result, OrderWithItems{Order: o, Items: items})
+		}
+
+		if data, err := json.Marshal(result); err == nil {
+			config.CacheSet(c, cacheKey, data, 5*time.Minute)
 		}
 
 		c.JSON(http.StatusOK, models.Result{Code: 0, Data: result})
@@ -232,6 +256,7 @@ func WxConfirmOrder(db *gorm.DB) gin.HandlerFunc {
 		}
 		order.Status = 3 // 已取货
 		db.Save(&order)
+		config.CacheDel(c, config.CacheKey("dashboard"), fmt.Sprintf("zhixiang:orders:%d", userID))
 		c.JSON(http.StatusOK, models.Result{Code: 0, Msg: "确认收货成功"})
 	}
 }
@@ -371,6 +396,8 @@ func AdminUpdateOrderStatus(db *gorm.DB) gin.HandlerFunc {
 			Type:    1,
 		})
 		tx.Commit()
+
+		config.CacheDel(c, config.CacheKey("dashboard"), fmt.Sprintf("zhixiang:orders:%d", order.UserID))
 
 		c.JSON(http.StatusOK, models.Result{Code: 0, Msg: "更新成功"})
 	}

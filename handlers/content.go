@@ -1,12 +1,15 @@
 package handlers
 
 import (
+	"encoding/json"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 
+	"zhixiang-group-buying/config"
 	"zhixiang-group-buying/models"
 )
 
@@ -18,11 +21,29 @@ func ListStores(db *gorm.DB) gin.HandlerFunc {
 		page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 		limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
 
+		// 第一页使用缓存
+		if page == 1 {
+			cacheKey := config.CacheKey("stores", "list")
+			if cached, ok := config.CacheGet(c, cacheKey); ok {
+				var list []models.Store
+				if json.Unmarshal([]byte(cached), &list) == nil {
+					c.JSON(http.StatusOK, models.PageResult{Code: 0, Msg: "ok", Count: int64(len(list)), Data: list})
+					return
+				}
+			}
+		}
+
 		var total int64
 		db.Model(&models.Store{}).Count(&total)
 
 		var list []models.Store
 		db.Order("id desc").Offset((page - 1) * limit).Limit(limit).Find(&list)
+
+		if page == 1 {
+			if data, err := json.Marshal(list); err == nil {
+				config.CacheSet(c, config.CacheKey("stores", "list"), data, 10*time.Minute)
+			}
+		}
 
 		c.JSON(http.StatusOK, models.PageResult{Code: 0, Msg: "ok", Count: total, Data: list})
 	}
@@ -37,6 +58,7 @@ func CreateStore(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 		db.Create(&store)
+		config.CacheDel(c, config.CacheKey("stores", "list"), config.CacheKey("stores", "wx_list"))
 		c.JSON(http.StatusOK, models.Result{Code: 0, Msg: "新增成功"})
 	}
 }
@@ -52,6 +74,7 @@ func UpdateStore(db *gorm.DB) gin.HandlerFunc {
 		}
 		c.ShouldBindJSON(&store)
 		db.Save(&store)
+		config.CacheDel(c, config.CacheKey("stores", "list"), config.CacheKey("stores", "wx_list"))
 		c.JSON(http.StatusOK, models.Result{Code: 0, Msg: "修改成功"})
 	}
 }
@@ -61,6 +84,7 @@ func DeleteStore(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		db.Delete(&models.Store{}, id)
+		config.CacheDel(c, config.CacheKey("stores", "list"), config.CacheKey("stores", "wx_list"))
 		c.JSON(http.StatusOK, models.Result{Code: 0, Msg: "删除成功"})
 	}
 }
@@ -68,8 +92,22 @@ func DeleteStore(db *gorm.DB) gin.HandlerFunc {
 // WxListStores GET /wx/stores
 func WxListStores(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		cacheKey := config.CacheKey("stores", "wx_list")
+		if cached, ok := config.CacheGet(c, cacheKey); ok {
+			var list []models.Store
+			if json.Unmarshal([]byte(cached), &list) == nil {
+				c.JSON(http.StatusOK, models.Result{Code: 0, Data: list})
+				return
+			}
+		}
+
 		var list []models.Store
 		db.Where("status = 1").Order("id asc").Find(&list)
+
+		if data, err := json.Marshal(list); err == nil {
+			config.CacheSet(c, cacheKey, data, 10*time.Minute)
+		}
+
 		c.JSON(http.StatusOK, models.Result{Code: 0, Data: list})
 	}
 }
@@ -114,8 +152,22 @@ func CreateMessage(db *gorm.DB) gin.HandlerFunc {
 // ListAds GET /admin/ads /wx/ads
 func ListAds(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		cacheKey := config.CacheKey("ads", "list")
+		if cached, ok := config.CacheGet(c, cacheKey); ok {
+			var list []models.Ads
+			if json.Unmarshal([]byte(cached), &list) == nil {
+				c.JSON(http.StatusOK, models.Result{Code: 0, Data: list})
+				return
+			}
+		}
+
 		var list []models.Ads
 		db.Where("status = 1").Order("sort asc").Find(&list)
+
+		if data, err := json.Marshal(list); err == nil {
+			config.CacheSet(c, cacheKey, data, 5*time.Minute)
+		}
+
 		c.JSON(http.StatusOK, models.Result{Code: 0, Data: list})
 	}
 }
@@ -145,6 +197,7 @@ func CreateAds(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 		db.Create(&ads)
+		config.CacheDel(c, config.CacheKey("ads", "list"))
 		c.JSON(http.StatusOK, models.Result{Code: 0, Msg: "新增成功"})
 	}
 }
@@ -160,6 +213,7 @@ func UpdateAds(db *gorm.DB) gin.HandlerFunc {
 		}
 		c.ShouldBindJSON(&ads)
 		db.Save(&ads)
+		config.CacheDel(c, config.CacheKey("ads", "list"))
 		c.JSON(http.StatusOK, models.Result{Code: 0, Msg: "修改成功"})
 	}
 }
@@ -169,6 +223,7 @@ func DeleteAds(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		db.Delete(&models.Ads{}, id)
+		config.CacheDel(c, config.CacheKey("ads", "list"))
 		c.JSON(http.StatusOK, models.Result{Code: 0, Msg: "删除成功"})
 	}
 }
@@ -178,8 +233,22 @@ func DeleteAds(db *gorm.DB) gin.HandlerFunc {
 // ListAnnouncements GET /admin/announcements /wx/announcements
 func ListAnnouncements(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		cacheKey := config.CacheKey("announcements", "list")
+		if cached, ok := config.CacheGet(c, cacheKey); ok {
+			var list []models.Announcement
+			if json.Unmarshal([]byte(cached), &list) == nil {
+				c.JSON(http.StatusOK, models.Result{Code: 0, Data: list})
+				return
+			}
+		}
+
 		var list []models.Announcement
 		db.Where("status = 1").Order("id desc").Find(&list)
+
+		if data, err := json.Marshal(list); err == nil {
+			config.CacheSet(c, cacheKey, data, 5*time.Minute)
+		}
+
 		c.JSON(http.StatusOK, models.Result{Code: 0, Data: list})
 	}
 }
@@ -209,6 +278,7 @@ func CreateAnnouncement(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 		db.Create(&a)
+		config.CacheDel(c, config.CacheKey("announcements", "list"))
 		c.JSON(http.StatusOK, models.Result{Code: 0, Msg: "发布成功"})
 	}
 }
@@ -224,6 +294,7 @@ func UpdateAnnouncement(db *gorm.DB) gin.HandlerFunc {
 		}
 		c.ShouldBindJSON(&a)
 		db.Save(&a)
+		config.CacheDel(c, config.CacheKey("announcements", "list"))
 		c.JSON(http.StatusOK, models.Result{Code: 0, Msg: "修改成功"})
 	}
 }
@@ -233,6 +304,7 @@ func DeleteAnnouncement(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		db.Delete(&models.Announcement{}, id)
+		config.CacheDel(c, config.CacheKey("announcements", "list"))
 		c.JSON(http.StatusOK, models.Result{Code: 0, Msg: "删除成功"})
 	}
 }

@@ -9,6 +9,12 @@ var (
 	DBName     = "zhixiang_group_buying"
 	DBCharset  = "utf8mb4"
 
+	// Redis 连线参数
+	RedisHost     = "127.0.0.1"
+	RedisPort     = "6379"
+	RedisPassword = ""
+	RedisDB       = 0
+
 	// JWT 密钥
 	JWTSecret = "zhixiang-jwt-secret-key-2024"
 
