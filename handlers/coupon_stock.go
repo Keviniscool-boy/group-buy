@@ -39,7 +39,7 @@ func couponInDate(coupon models.Coupon, now time.Time) bool {
 	return coupon.EndTime == nil || !coupon.EndTime.Before(now)
 }
 
-// CreateStockLog writes a single inventory movement record.
+// 写入一条库存变动流水，记录增减前后的数量；对账与超卖排查依赖这份留痕，扣减与回滚路径都必须调用。
 func CreateStockLog(tx *gorm.DB, com models.Commodity, change int, before int, after int, typ string, refID uint, remark string, operator string) {
 	if operator == "" {
 		operator = "system"

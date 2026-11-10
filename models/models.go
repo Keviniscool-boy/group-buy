@@ -281,7 +281,7 @@ type OperationLog struct {
 
 func (OperationLog) TableName() string { return "cs_operation_log" }
 
-// Coupon stores platform promotion rules.
+// 平台促销规则：发放总量与已领数量配合领取入口的条件扣减，防止并发超发。
 type Coupon struct {
 	ID        uint       `gorm:"primaryKey" json:"id"`
 	Name      string     `gorm:"size:100;not null" json:"name"`
@@ -299,7 +299,7 @@ type Coupon struct {
 
 func (Coupon) TableName() string { return "cs_coupon" }
 
-// UserCoupon is one claimed coupon owned by a user.
+// 用户持券记录：只有未使用状态才能核销，核销走条件更新，防止并发订单重复抵扣。
 type UserCoupon struct {
 	ID         uint       `gorm:"primaryKey" json:"id"`
 	UserID     uint       `gorm:"index;not null" json:"user_id"`
@@ -315,7 +315,7 @@ type UserCoupon struct {
 
 func (UserCoupon) TableName() string { return "cs_user_coupon" }
 
-// StockLog records every inventory movement.
+// 库存变动留痕：保存每次增减的前后数量，用于对账与问题回溯。
 type StockLog struct {
 	ID            uint      `gorm:"primaryKey" json:"id"`
 	CommodityID   uint      `gorm:"index;not null" json:"commodity_id"`

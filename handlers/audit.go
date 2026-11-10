@@ -12,7 +12,7 @@ import (
 	"zhixiang-group-buying/models"
 )
 
-// AdminAuditLog records mutating admin operations for audit and demo review.
+// 审计中介：后台所有写操作在此留痕，供事后追责与操作回放；读取类请求不记录，避免日志膨胀。
 func AdminAuditLog(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		start := time.Now()
