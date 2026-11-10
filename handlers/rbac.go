@@ -41,7 +41,7 @@ func UpdateRole(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		var role models.Role
-		if db.First(&role, id).Error != nil {
+		if db.First(&role, "id = ?", id).Error != nil {
 			c.JSON(http.StatusOK, models.Result{Code: 400, Msg: "角色不存在"})
 			return
 		}
@@ -56,7 +56,7 @@ func UpdateRole(db *gorm.DB) gin.HandlerFunc {
 func DeleteRole(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
-		db.Delete(&models.Role{}, id)
+		db.Delete(&models.Role{}, "id = ?", id)
 		db.Where("role_id = ?", id).Delete(&models.Authority{})
 		c.JSON(http.StatusOK, models.Result{Code: 0, Msg: "删除成功"})
 	}
@@ -90,7 +90,7 @@ func CreateMenu(db *gorm.DB) gin.HandlerFunc {
 func DeleteMenu(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
-		db.Delete(&models.Menu{}, id)
+		db.Delete(&models.Menu{}, "id = ?", id)
 		c.JSON(http.StatusOK, models.Result{Code: 0, Msg: "删除成功"})
 	}
 }

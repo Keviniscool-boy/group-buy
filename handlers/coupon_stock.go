@@ -101,7 +101,7 @@ func UpdateCoupon(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		var coupon models.Coupon
-		if db.First(&coupon, id).Error != nil {
+		if db.First(&coupon, "id = ?", id).Error != nil {
 			c.JSON(http.StatusOK, models.Result{Code: 400, Msg: "优惠券不存在"})
 			return
 		}
@@ -118,7 +118,7 @@ func UpdateCoupon(db *gorm.DB) gin.HandlerFunc {
 // DeleteCoupon DELETE /admin/coupons/:id
 func DeleteCoupon(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		db.Delete(&models.Coupon{}, c.Param("id"))
+		db.Delete(&models.Coupon{}, "id = ?", c.Param("id"))
 		config.CacheDel(c, config.CacheKey("coupons", "wx_list"))
 		c.JSON(http.StatusOK, models.Result{Code: 0, Msg: "优惠券删除成功"})
 	}
@@ -159,7 +159,7 @@ func WxReceiveCoupon(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userID := c.GetUint("userID")
 		var coupon models.Coupon
-		if db.First(&coupon, c.Param("id")).Error != nil || !couponUsable(coupon, time.Now()) {
+		if db.First(&coupon, "id = ?", c.Param("id")).Error != nil || !couponUsable(coupon, time.Now()) {
 			c.JSON(http.StatusOK, models.Result{Code: 400, Msg: "优惠券不可领取"})
 			return
 		}
@@ -172,6 +172,13 @@ func WxReceiveCoupon(db *gorm.DB) gin.HandlerFunc {
 		}
 
 		tx := db.Begin()
+		// 领取资格由带条件的原子扣减判定，避免并发请求越过已领数量上限
+		res := tx.Model(&models.Coupon{}).Where("id = ? AND status = 1 AND (total <= 0 OR received < total)", coupon.ID).Update("received", gorm.Expr("received + 1"))
+		if res.Error != nil || res.RowsAffected == 0 {
+			tx.Rollback()
+			c.JSON(http.StatusOK, models.Result{Code: 400, Msg: "优惠券不可领取"})
+			return
+		}
 		userCoupon := models.UserCoupon{
 			UserID:     userID,
 			CouponID:   coupon.ID,
@@ -185,7 +192,6 @@ func WxReceiveCoupon(db *gorm.DB) gin.HandlerFunc {
 			c.JSON(http.StatusOK, models.Result{Code: 500, Msg: "领取失败"})
 			return
 		}
-		tx.Model(&models.Coupon{}).Where("id = ?", coupon.ID).Update("received", gorm.Expr("received + 1"))
 		tx.Commit()
 
 		config.CacheDel(c, config.CacheKey("coupons", "wx_list"), config.CacheKey("user_coupons", fmt.Sprintf("%d", userID)))

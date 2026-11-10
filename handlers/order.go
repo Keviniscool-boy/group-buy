@@ -128,13 +128,15 @@ func WxCreateOrder(db *gorm.DB) gin.HandlerFunc {
 
 		if selectedCoupon.ID > 0 {
 			now := time.Now()
-			if err := tx.Model(&models.UserCoupon{}).Where("id = ? AND status = 0", selectedCoupon.ID).Updates(map[string]interface{}{
+			// 核销以带条件的更新结果为准，防止同一张券被并发订单重复抵扣
+			res := tx.Model(&models.UserCoupon{}).Where("id = ? AND status = 0", selectedCoupon.ID).Updates(map[string]interface{}{
 				"status":   1,
 				"order_id": order.ID,
 				"used_at":  &now,
-			}).Error; err != nil {
+			})
+			if res.Error != nil || res.RowsAffected == 0 {
 				tx.Rollback()
-				c.JSON(http.StatusOK, models.Result{Code: 500, Msg: "优惠券使用失败"})
+				c.JSON(http.StatusOK, models.Result{Code: 400, Msg: "优惠券不可用"})
 				return
 			}
 			tx.Model(&models.Coupon{}).Where("id = ?", selectedCoupon.CouponID).Update("used", gorm.Expr("used + 1"))
@@ -294,7 +296,7 @@ func AdminGetOrder(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		var order models.Order
-		if db.First(&order, id).Error != nil {
+		if db.First(&order, "id = ?", id).Error != nil {
 			c.JSON(http.StatusOK, models.Result{Code: 400, Msg: "订单不存在"})
 			return
 		}
@@ -318,7 +320,7 @@ func AdminUpdateOrderStatus(db *gorm.DB) gin.HandlerFunc {
 		}
 
 		var order models.Order
-		if db.First(&order, id).Error != nil {
+		if db.First(&order, "id = ?", id).Error != nil {
 			c.JSON(http.StatusOK, models.Result{Code: 400, Msg: "订单不存在"})
 			return
 		}

@@ -81,7 +81,7 @@ func UpdateAdmin(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		var admin models.Admin
-		if db.First(&admin, id).Error != nil {
+		if db.First(&admin, "id = ?", id).Error != nil {
 			c.JSON(http.StatusOK, models.Result{Code: 400, Msg: "管理员不存在"})
 			return
 		}
@@ -115,7 +115,7 @@ func DeleteAdmin(db *gorm.DB) gin.HandlerFunc {
 			c.JSON(http.StatusOK, models.Result{Code: 400, Msg: "不能删除当前登录管理员"})
 			return
 		}
-		db.Delete(&models.Admin{}, id)
+		db.Delete(&models.Admin{}, "id = ?", id)
 		c.JSON(http.StatusOK, models.Result{Code: 0, Msg: "删除成功"})
 	}
 }
@@ -154,7 +154,7 @@ func DeleteUser(db *gorm.DB) gin.HandlerFunc {
 			db.Where("cart_id = ?", cart.ID).Delete(&models.CartItem{})
 		}
 		db.Where("user_id = ?", id).Delete(&models.ShoppingCart{})
-		db.Delete(&models.User{}, id)
+		db.Delete(&models.User{}, "id = ?", id)
 		c.JSON(http.StatusOK, models.Result{Code: 0, Msg: "删除成功"})
 	}
 }
@@ -164,7 +164,7 @@ func ToggleUser(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		var user models.User
-		if db.First(&user, id).Error != nil {
+		if db.First(&user, "id = ?", id).Error != nil {
 			c.JSON(http.StatusOK, models.Result{Code: 400, Msg: "用户不存在"})
 			return
 		}

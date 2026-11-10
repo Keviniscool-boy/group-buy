@@ -68,7 +68,7 @@ func UpdateStore(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		var store models.Store
-		if db.First(&store, id).Error != nil {
+		if db.First(&store, "id = ?", id).Error != nil {
 			c.JSON(http.StatusOK, models.Result{Code: 400, Msg: "门店不存在"})
 			return
 		}
@@ -83,7 +83,7 @@ func UpdateStore(db *gorm.DB) gin.HandlerFunc {
 func DeleteStore(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
-		db.Delete(&models.Store{}, id)
+		db.Delete(&models.Store{}, "id = ?", id)
 		config.CacheDel(c, config.CacheKey("stores", "list"), config.CacheKey("stores", "wx_list"))
 		c.JSON(http.StatusOK, models.Result{Code: 0, Msg: "删除成功"})
 	}
@@ -207,7 +207,7 @@ func UpdateAds(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		var ads models.Ads
-		if db.First(&ads, id).Error != nil {
+		if db.First(&ads, "id = ?", id).Error != nil {
 			c.JSON(http.StatusOK, models.Result{Code: 400, Msg: "广告不存在"})
 			return
 		}
@@ -222,7 +222,7 @@ func UpdateAds(db *gorm.DB) gin.HandlerFunc {
 func DeleteAds(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
-		db.Delete(&models.Ads{}, id)
+		db.Delete(&models.Ads{}, "id = ?", id)
 		config.CacheDel(c, config.CacheKey("ads", "list"))
 		c.JSON(http.StatusOK, models.Result{Code: 0, Msg: "删除成功"})
 	}
@@ -288,7 +288,7 @@ func UpdateAnnouncement(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		var a models.Announcement
-		if db.First(&a, id).Error != nil {
+		if db.First(&a, "id = ?", id).Error != nil {
 			c.JSON(http.StatusOK, models.Result{Code: 400, Msg: "公告不存在"})
 			return
 		}
@@ -303,7 +303,7 @@ func UpdateAnnouncement(db *gorm.DB) gin.HandlerFunc {
 func DeleteAnnouncement(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
-		db.Delete(&models.Announcement{}, id)
+		db.Delete(&models.Announcement{}, "id = ?", id)
 		config.CacheDel(c, config.CacheKey("announcements", "list"))
 		c.JSON(http.StatusOK, models.Result{Code: 0, Msg: "删除成功"})
 	}

@@ -63,7 +63,7 @@ func UpdateCategory(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		var cat models.CommodityCategory
-		if db.First(&cat, id).Error != nil {
+		if db.First(&cat, "id = ?", id).Error != nil {
 			c.JSON(http.StatusOK, models.Result{Code: 400, Msg: "分类不存在"})
 			return
 		}
@@ -78,7 +78,7 @@ func UpdateCategory(db *gorm.DB) gin.HandlerFunc {
 func DeleteCategory(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
-		db.Delete(&models.CommodityCategory{}, id)
+		db.Delete(&models.CommodityCategory{}, "id = ?", id)
 		config.CacheDel(c, config.CacheKey("categories"))
 		c.JSON(http.StatusOK, models.Result{Code: 0, Msg: "删除成功"})
 	}
@@ -138,7 +138,7 @@ func UpdateCommodity(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		var com models.Commodity
-		if db.First(&com, id).Error != nil {
+		if db.First(&com, "id = ?", id).Error != nil {
 			c.JSON(http.StatusOK, models.Result{Code: 400, Msg: "商品不存在"})
 			return
 		}
@@ -169,7 +169,7 @@ func ToggleCommodity(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		var com models.Commodity
-		if db.First(&com, id).Error != nil {
+		if db.First(&com, "id = ?", id).Error != nil {
 			c.JSON(http.StatusOK, models.Result{Code: 400, Msg: "商品不存在"})
 			return
 		}
@@ -184,7 +184,7 @@ func ToggleCommodity(db *gorm.DB) gin.HandlerFunc {
 func DeleteCommodity(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
-		db.Delete(&models.Commodity{}, id)
+		db.Delete(&models.Commodity{}, "id = ?", id)
 		config.CacheDelPattern(c, config.CacheKey("commodities")+"*")
 		c.JSON(http.StatusOK, models.Result{Code: 0, Msg: "删除成功"})
 	}
@@ -259,7 +259,7 @@ func WxGetCommodity(db *gorm.DB) gin.HandlerFunc {
 		}
 
 		var com models.Commodity
-		if db.First(&com, id).Error != nil {
+		if db.First(&com, "id = ?", id).Error != nil {
 			c.JSON(http.StatusOK, models.Result{Code: 400, Msg: "商品不存在"})
 			return
 		}
